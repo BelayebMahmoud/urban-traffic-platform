@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 import { VehicleServiceModule } from './../src/vehicle-service.module';
 
 describe('VehicleServiceController (e2e)', () => {
@@ -15,10 +15,52 @@ describe('VehicleServiceController (e2e)', () => {
     await app.init();
   });
 
-  it('/ (GET)', () => {
-    return request(app.getHttpServer())
-      .get('/')
+  it('should handle vehicle management flow', async () => {
+    const createVehicleResponse = await request(app.getHttpServer())
+      .post('/vehicles')
+      .send({
+        plateNumber: 'xy-987-zt',
+        type: 'BUS',
+        status: 'ACTIVE',
+        ownerName: 'City Transit',
+      })
+      .expect(201);
+
+    const vehicleId = createVehicleResponse.body.id;
+
+    await request(app.getHttpServer())
+      .get('/vehicles')
       .expect(200)
-      .expect('Hello World!');
+      .expect((response) => {
+        expect(response.body).toHaveLength(1);
+      });
+
+    await request(app.getHttpServer())
+      .post(`/vehicles/${vehicleId}/positions/simulate`)
+      .send({ latitude: 36.75, longitude: 3.06, speed: 42 })
+      .expect(201)
+      .expect((response) => {
+        expect(response.body.vehicleId).toBe(vehicleId);
+        expect(response.body.simulated).toBe(true);
+      });
+
+    await request(app.getHttpServer())
+      .get(`/vehicles/${vehicleId}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.id).toBe(vehicleId);
+        expect(response.body.totalPositions).toBe(1);
+      });
+
+    await request(app.getHttpServer())
+      .get(`/vehicles/${vehicleId}/movements`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body).toHaveLength(1);
+      });
+  });
+
+  afterEach(async () => {
+    await app.close();
   });
 });
