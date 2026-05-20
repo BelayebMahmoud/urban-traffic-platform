@@ -1,0 +1,122 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  OPERATOR
+}
+
+enum VehicleType {
+  CAR
+  TRUCK
+  BUS
+  MOTORCYCLE
+}
+
+enum VehicleStatus {
+  ACTIVE
+  INACTIVE
+  MAINTENANCE
+}
+
+enum IncidentType {
+  ACCIDENT
+  CONSTRUCTION
+  ROAD_CLOSED
+  TRAFFIC_JAM
+}
+
+enum IncidentStatus {
+  REPORTED
+  IN_PROGRESS
+  RESOLVED
+}
+
+enum TrafficLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model User {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  password      String
+  firstName     String
+  lastName      String
+  role          Role           @default(OPERATOR)
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  vehicles      Vehicle[]
+  incidents     Incident[]
+  notifications Notification[]
+}
+
+model Vehicle {
+  id          String        @id @default(uuid())
+  plateNumber String        @unique
+  type        VehicleType
+  status      VehicleStatus @default(ACTIVE)
+  owner       User          @relation(fields: [ownerId], references: [id])
+  ownerId     String
+  positions   GpsPosition[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model GpsPosition {
+  id        String   @id @default(uuid())
+  vehicle   Vehicle  @relation(fields: [vehicleId], references: [id])
+  vehicleId String
+  latitude  Float
+  longitude Float
+  speed     Float?
+  timestamp DateTime @default(now())
+}
+
+model TrafficZone {
+  id        String       @id @default(uuid())
+  name      String
+  latitude  Float
+  longitude Float
+  radius    Float
+  density   Float        @default(0)
+  level     TrafficLevel @default(LOW)
+  incidents Incident[]
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+}
+
+model Incident {
+  id           String         @id @default(uuid())
+  type         IncidentType
+  status       IncidentStatus @default(REPORTED)
+  description  String
+  latitude     Float
+  longitude    Float
+  reportedBy   User           @relation(fields: [reportedById], references: [id])
+  reportedById String
+  zone         TrafficZone?   @relation(fields: [zoneId], references: [id])
+  zoneId       String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+}
+
+model Notification {
+  id          String   @id @default(uuid())
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String
+  title       String
+  message     String
+  isRead      Boolean  @default(false)
+  type        String
+  referenceId String?
+  createdAt   DateTime @default(now())
+}
