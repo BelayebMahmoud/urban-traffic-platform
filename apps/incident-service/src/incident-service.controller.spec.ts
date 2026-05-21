@@ -14,9 +14,34 @@ describe('IncidentServiceController', () => {
     incidentServiceController = app.get<IncidentServiceController>(IncidentServiceController);
   });
 
-  describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(incidentServiceController.getHello()).toBe('Hello World!');
+  describe('incidents', () => {
+    it('should declare and list incidents', () => {
+      const incident = incidentServiceController.declareIncident({
+        type: 'ACCIDENT',
+        description: 'Collision on the main road',
+        latitude: 36.8065,
+        longitude: 10.1815,
+        reportedBy: 'operator-1',
+      });
+
+      expect(incident.status).toBe('REPORTED');
+      expect(incidentServiceController.getIncidents()).toContainEqual(incident);
+    });
+
+    it('should update incident status', () => {
+      const incident = incidentServiceController.declareIncident({
+        type: 'TRAFFIC_JAM',
+        description: 'Heavy traffic near city center',
+        latitude: 36.8,
+        longitude: 10.18,
+        reportedBy: 'operator-1',
+      });
+
+      expect(
+        incidentServiceController.updateIncidentStatus(incident.id, {
+          status: 'IN_PROGRESS',
+        }).status,
+      ).toBe('IN_PROGRESS');
     });
   });
 });

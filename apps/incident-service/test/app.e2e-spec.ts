@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
+import request from 'supertest';
 import { IncidentServiceModule } from './../src/incident-service.module';
 
 describe('IncidentServiceController (e2e)', () => {
@@ -12,13 +12,43 @@ describe('IncidentServiceController (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        transform: true,
+        forbidNonWhitelisted: true,
+      }),
+    );
     await app.init();
   });
 
-  it('/ (GET)', () => {
-    return request(app.getHttpServer())
-      .get('/')
+  it('/incidents (POST, GET, PATCH)', async () => {
+    const createResponse = await request(app.getHttpServer())
+      .post('/incidents')
+      .send({
+        type: 'ACCIDENT',
+        description: 'Collision on the main road',
+        latitude: 36.8065,
+        longitude: 10.1815,
+        reportedBy: 'operator-1',
+      })
+      .expect(201);
+
+    expect(createResponse.body.status).toBe('REPORTED');
+
+    await request(app.getHttpServer())
+      .get('/incidents')
       .expect(200)
-      .expect('Hello World!');
+      .expect(({ body }) => {
+        expect(body).toHaveLength(1);
+      });
+
+    await request(app.getHttpServer())
+      .patch(`/incidents/${createResponse.body.id}/status`)
+      .send({ status: 'RESOLVED' })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.status).toBe('RESOLVED');
+      });
   });
 });
