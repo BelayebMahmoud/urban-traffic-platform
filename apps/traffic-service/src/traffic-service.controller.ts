@@ -1,12 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
-import { TrafficServiceService } from './traffic-service.service';
+import { Controller } from '@nestjs/common';
 
 @Controller()
-export class TrafficServiceController {
-  constructor(private readonly trafficServiceService: TrafficServiceService) {}
-
-  @Get()
-  getHello(): string {
-    return this.trafficServiceService.getHello();
-  }
-}
+export class TrafficServiceController {}

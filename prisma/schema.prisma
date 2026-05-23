@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -98,7 +98,7 @@ model Incident {
   id           String         @id @default(uuid())
   type         IncidentType
   status       IncidentStatus @default(REPORTED)
-  description  String
+  description  String         @db.Text
   latitude     Float
   longitude    Float
   reportedBy   User           @relation(fields: [reportedById], references: [id])
@@ -114,7 +114,7 @@ model Notification {
   user        User     @relation(fields: [userId], references: [id])
   userId      String
   title       String
-  message     String
+  message     String   @db.Text
   isRead      Boolean  @default(false)
   type        String
   referenceId String?

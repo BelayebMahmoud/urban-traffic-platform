@@ -1,0 +1,202 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type AuthResponse {
+  accessToken: String!
+  user: UserModel!
+}
+
+input CreateIncidentInput {
+  description: String!
+  latitude: Float!
+  longitude: Float!
+  type: IncidentType!
+  zoneId: String
+}
+
+input CreateVehicleInput {
+  plateNumber: String!
+  status: VehicleStatus!
+  type: VehicleType!
+}
+
+input CreateZoneInput {
+  latitude: Float!
+  longitude: Float!
+  name: String!
+  radius: Float!
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type GpsPositionGql {
+  id: ID!
+  latitude: Float!
+  longitude: Float!
+  speed: Float
+  timestamp: DateTime!
+  vehicleId: String!
+}
+
+type IncidentGql {
+  createdAt: DateTime!
+  description: String!
+  id: ID!
+  latitude: Float!
+  longitude: Float!
+  reportedById: String!
+  status: IncidentStatus!
+  type: IncidentType!
+  updatedAt: DateTime!
+  zoneId: String
+}
+
+enum IncidentStatus {
+  IN_PROGRESS
+  REPORTED
+  RESOLVED
+}
+
+enum IncidentType {
+  ACCIDENT
+  CONSTRUCTION
+  ROAD_CLOSED
+  TRAFFIC_JAM
+}
+
+input LoginInput {
+  email: String!
+  password: String!
+}
+
+type Mutation {
+  createTrafficZone(input: CreateZoneInput!): TrafficZoneGql!
+  createVehicle(input: CreateVehicleInput!): VehicleGql!
+  declareIncident(input: CreateIncidentInput!): IncidentGql!
+  login(input: LoginInput!): AuthResponse!
+  markNotificationAsRead(id: ID!): NotificationGql!
+  recordGpsPosition(input: SimulatePositionInput!): GpsPositionGql!
+  register(input: RegisterInput!): AuthResponse!
+  sendNotification(input: SendNotificationInput!): NotificationGql!
+  updateIncidentStatus(input: UpdateIncidentStatusInput!): IncidentGql!
+  updateTrafficDensity(input: UpdateDensityInput!): TrafficZoneGql!
+}
+
+type NotificationGql {
+  createdAt: DateTime!
+  id: ID!
+  isRead: Boolean!
+  message: String!
+  referenceId: String
+  title: String!
+  type: String!
+  userId: String!
+}
+
+type Query {
+  congestedZones: [TrafficZoneGql!]!
+  incident(id: ID!): IncidentGql!
+  incidents: [IncidentGql!]!
+  me: UserModel!
+  myNotifications: [NotificationGql!]!
+  trafficZone(id: ID!): TrafficZoneGql!
+  trafficZones: [TrafficZoneGql!]!
+  vehicle(id: ID!): VehicleGql!
+  vehicleHistory(vehicleId: ID!): [GpsPositionGql!]!
+  vehicles: [VehicleGql!]!
+}
+
+input RegisterInput {
+  email: String!
+  firstName: String!
+  lastName: String!
+  password: String!
+  role: Role
+}
+
+"""User role"""
+enum Role {
+  ADMIN
+  OPERATOR
+}
+
+input SendNotificationInput {
+  message: String!
+  referenceId: String
+  title: String!
+  type: String!
+  userId: String!
+}
+
+input SimulatePositionInput {
+  latitude: Float
+  longitude: Float
+  speed: Float
+  vehicleId: ID!
+}
+
+enum TrafficLevel {
+  HIGH
+  LOW
+  MEDIUM
+}
+
+type TrafficZoneGql {
+  createdAt: DateTime!
+  density: Float!
+  id: ID!
+  latitude: Float!
+  level: TrafficLevel!
+  longitude: Float!
+  name: String!
+  radius: Float!
+  updatedAt: DateTime!
+}
+
+input UpdateDensityInput {
+  density: Float!
+  zoneId: ID!
+}
+
+input UpdateIncidentStatusInput {
+  incidentId: ID!
+  status: IncidentStatus!
+}
+
+type UserModel {
+  createdAt: DateTime!
+  email: String!
+  firstName: String!
+  id: ID!
+  isActive: Boolean!
+  lastName: String!
+  role: Role!
+}
+
+type VehicleGql {
+  createdAt: DateTime!
+  id: ID!
+  ownerId: String!
+  plateNumber: String!
+  positions: [GpsPositionGql!]
+  status: VehicleStatus!
+  type: VehicleType!
+  updatedAt: DateTime!
+}
+
+enum VehicleStatus {
+  ACTIVE
+  INACTIVE
+  MAINTENANCE
+}
+
+enum VehicleType {
+  BUS
+  CAR
+  MOTORCYCLE
+  TRUCK
+}

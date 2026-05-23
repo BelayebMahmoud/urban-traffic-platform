@@ -1,15 +1,24 @@
 import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
-import { CreateIncidentDto } from './dto/create-incident.dto';
-import { UpdateIncidentStatusDto } from './dto/update-incident-status.dto';
+import { IncidentStatus } from '@prisma/client';
 import { IncidentServiceService } from './incident-service.service';
+
+interface CreateIncidentBody {
+  type: any;
+  description: string;
+  latitude: number;
+  longitude: number;
+  reportedById: string;
+  zoneId?: string;
+}
 
 @Controller('incidents')
 export class IncidentServiceController {
   constructor(private readonly incidentServiceService: IncidentServiceService) {}
 
   @Post()
-  declareIncident(@Body() dto: CreateIncidentDto) {
-    return this.incidentServiceService.declareIncident(dto);
+  declareIncident(@Body() body: CreateIncidentBody) {
+    const { reportedById, ...rest } = body;
+    return this.incidentServiceService.declareIncident(rest as any, reportedById);
   }
 
   @Get()
@@ -18,15 +27,15 @@ export class IncidentServiceController {
   }
 
   @Get(':incidentId')
-  getIncidentDetails(@Param('incidentId') incidentId: string) {
-    return this.incidentServiceService.getIncidentDetails(incidentId);
+  getIncident(@Param('incidentId') incidentId: string) {
+    return this.incidentServiceService.getIncident(incidentId);
   }
 
   @Patch(':incidentId/status')
   updateIncidentStatus(
     @Param('incidentId') incidentId: string,
-    @Body() dto: UpdateIncidentStatusDto,
+    @Body('status') status: IncidentStatus,
   ) {
-    return this.incidentServiceService.updateIncidentStatus(incidentId, dto);
+    return this.incidentServiceService.updateIncidentStatus(incidentId, status);
   }
 }

@@ -1,64 +1,40 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { randomUUID } from 'node:crypto';
-import { CreateIncidentDto } from './dto/create-incident.dto';
-import { UpdateIncidentStatusDto } from './dto/update-incident-status.dto';
-import { Incident } from './models/incident.model';
+import { PrismaClientService } from '@app/prisma-client';
+import { IncidentStatus } from '@prisma/client';
+import { CreateIncidentInput } from './dto/create-incident.input';
 
 @Injectable()
 export class IncidentServiceService {
-  private readonly incidents = new Map<string, Incident>();
+  constructor(private readonly prisma: PrismaClientService) {}
 
-  declareIncident(dto: CreateIncidentDto): Incident {
-    const now = new Date().toISOString();
-    const incident: Incident = {
-      id: randomUUID(),
-      type: dto.type,
-      status: 'REPORTED',
-      description: dto.description.trim(),
-      latitude: dto.latitude,
-      longitude: dto.longitude,
-      reportedBy: dto.reportedBy.trim(),
-      createdAt: now,
-      updatedAt: now,
-    };
+  declareIncident(input: CreateIncidentInput, reportedById: string) {
+    return this.prisma.incident.create({
+      data: {
+        type: input.type,
+        description: input.description.trim(),
+        latitude: input.latitude,
+        longitude: input.longitude,
+        reportedById,
+        zoneId: input.zoneId ?? null,
+      },
+    });
+  }
 
-    this.incidents.set(incident.id, incident);
+  getIncidents() {
+    return this.prisma.incident.findMany({ orderBy: { createdAt: 'desc' } });
+  }
 
+  async getIncident(id: string) {
+    const incident = await this.prisma.incident.findUnique({ where: { id } });
+    if (!incident) throw new NotFoundException('Incident not found.');
     return incident;
   }
 
-  getIncidents(): Incident[] {
-    return [...this.incidents.values()].sort((a, b) =>
-      b.createdAt.localeCompare(a.createdAt),
-    );
-  }
-
-  getIncidentDetails(incidentId: string): Incident {
-    return this.getIncidentOrThrow(incidentId);
-  }
-
-  updateIncidentStatus(
-    incidentId: string,
-    dto: UpdateIncidentStatusDto,
-  ): Incident {
-    const incident = this.getIncidentOrThrow(incidentId);
-    const updatedIncident: Incident = {
-      ...incident,
-      status: dto.status,
-      updatedAt: new Date().toISOString(),
-    };
-
-    this.incidents.set(incidentId, updatedIncident);
-
-    return updatedIncident;
-  }
-
-  private getIncidentOrThrow(incidentId: string): Incident {
-    const incident = this.incidents.get(incidentId);
-    if (!incident) {
-      throw new NotFoundException('Incident not found.');
-    }
-
-    return incident;
+  async updateIncidentStatus(incidentId: string, status: IncidentStatus) {
+    await this.getIncident(incidentId);
+    return this.prisma.incident.update({
+      where: { id: incidentId },
+      data: { status },
+    });
   }
 }

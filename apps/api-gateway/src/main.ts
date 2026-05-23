@@ -1,8 +1,12 @@
 import { NestFactory } from '@nestjs/core';
+import { ValidationPipe } from '@nestjs/common';
 import { ApiGatewayModule } from './api-gateway.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(ApiGatewayModule);
-  await app.listen(process.env.port ?? 3000);
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+  app.enableCors();
+  await app.listen(process.env.API_GATEWAY_PORT ?? 3000);
+  console.log(`API Gateway running on http://localhost:${process.env.API_GATEWAY_PORT ?? 3000}/graphql`);
 }
 bootstrap();
