@@ -1,14 +1,18 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaClientService } from '@app/prisma-client';
 import { IncidentStatus } from '@prisma/client';
+import { EventsGateway } from '@app/common';
 import { CreateIncidentInput } from './dto/create-incident.input';
 
 @Injectable()
 export class IncidentServiceService {
-  constructor(private readonly prisma: PrismaClientService) {}
+  constructor(
+    private readonly prisma: PrismaClientService,
+    private readonly events: EventsGateway,
+  ) {}
 
-  declareIncident(input: CreateIncidentInput, reportedById: string) {
-    return this.prisma.incident.create({
+  async declareIncident(input: CreateIncidentInput, reportedById: string) {
+    const incident = await this.prisma.incident.create({
       data: {
         type: input.type,
         description: input.description.trim(),
@@ -18,6 +22,8 @@ export class IncidentServiceService {
         zoneId: input.zoneId ?? null,
       },
     });
+    this.events.emitNewIncident(incident);
+    return incident;
   }
 
   getIncidents() {

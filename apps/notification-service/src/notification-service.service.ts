@@ -1,13 +1,19 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaClientService } from '@app/prisma-client';
+import { EventsGateway } from '@app/common';
 import { SendNotificationInput } from './dto/send-notification.input';
 
 @Injectable()
 export class NotificationServiceService {
-  constructor(private readonly prisma: PrismaClientService) {}
+  constructor(
+    private readonly prisma: PrismaClientService,
+    private readonly events: EventsGateway,
+  ) {}
 
-  sendNotification(input: SendNotificationInput) {
-    return this.prisma.notification.create({ data: input });
+  async sendNotification(input: SendNotificationInput) {
+    const notif = await this.prisma.notification.create({ data: input });
+    this.events.emitUserNotification(input.userId, notif);
+    return notif;
   }
 
   getNotifications(userId: string) {

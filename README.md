@@ -1,98 +1,281 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Urban Traffic Platform
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+A distributed platform for urban traffic management built with NestJS, GraphQL, and MySQL.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+The platform allows supervision of vehicles, detection of traffic incidents, and analysis of traffic circulation through a single GraphQL API Gateway that aggregates five independent microservices.
 
-## Description
+---
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Architecture
 
-## Project setup
-
-```bash
-$ npm install
+```
+Client (Apollo Sandbox / Postman)
+             │
+             ▼  http://localhost:3000/graphql
+       API Gateway  ← single GraphQL entry point
+             │
+    ┌────────┼──────────────────────┐
+    │        │           │          │
+  Auth    Vehicle    Traffic    Incident   Notification
+ Service  Service    Service    Service     Service
+    │        │           │          │          │
+    └────────┴───────────┴──────────┴──────────┘
+                         │
+                    Prisma ORM
+                         │
+                    MySQL Database
 ```
 
-## Compile and run the project
+All services are NestJS modules imported into the API Gateway. A single GraphQL schema is built automatically from all resolvers.
 
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Framework | NestJS 11 |
+| API | GraphQL (code-first) — Apollo Server 5 |
+| ORM | Prisma 6 |
+| Database | MySQL (phpMyAdmin) |
+| Auth | Passport JWT + bcryptjs |
+| Validation | class-validator |
+| Testing | Jest |
+
+---
+
+## Prerequisites
+
+- Node.js 18+
+- MySQL running on port 3306 (XAMPP / phpMyAdmin)
+
+---
+
+## Setup
+
+**1. Install dependencies**
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+npm install
 ```
 
-## Run tests
+**2. Configure environment**
 
+Create a `.env` file at the project root:
+```env
+DATABASE_URL=mysql://root:@localhost:3306/urban_traffic
+JWT_SECRET=urban-traffic-super-secret-2024
+JWT_EXPIRES_IN=7d
+API_GATEWAY_PORT=3000
+AUTH_SERVICE_PORT=3001
+VEHICLE_SERVICE_PORT=3002
+TRAFFIC_SERVICE_PORT=3003
+INCIDENT_SERVICE_PORT=3004
+NOTIFICATION_SERVICE_PORT=3005
+```
+> If your MySQL root user has a password: `mysql://root:YOUR_PASSWORD@localhost:3306/urban_traffic`
+
+**3. Create the database**
+
+Open phpMyAdmin and create a database named `urban_traffic`.
+
+**4. Run migrations**
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+npx prisma migrate dev --name init
 ```
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
+**5. Start the gateway**
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+nest start api-gateway --watch
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+GraphQL playground: `http://localhost:3000/graphql`
 
-## Resources
+---
 
-Check out a few resources that may come in handy when working with NestJS:
+## Project Structure
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+```
+apps/
+  api-gateway/           Port 3000 — GraphQL entry point, imports all modules
+  auth-service/          Port 3001 — register, login, JWT
+  vehicle-service/       Port 3002 — vehicle CRUD + GPS simulation
+  traffic-service/       Port 3003 — traffic zones + density classification
+  incident-service/      Port 3004 — incident reporting + status tracking
+  notification-service/  Port 3005 — user notifications
+libs/
+  common/                JWT strategy, guards (@JwtAuthGuard), decorators (@CurrentUser)
+  prisma-client/         Global Prisma client shared across all services
+prisma/
+  schema.prisma          Single database schema for all services
+```
 
-## Support
+---
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+## Data Models
 
-## Stay in touch
+| Model | Key Fields |
+|---|---|
+| `User` | email, password (hashed), role (`ADMIN` \| `OPERATOR`) |
+| `Vehicle` | plateNumber, type (`CAR` `TRUCK` `BUS` `MOTORCYCLE`), status, ownerId |
+| `GpsPosition` | vehicleId, latitude, longitude, speed, timestamp |
+| `TrafficZone` | name, latitude, longitude, radius, density, level (`LOW` `MEDIUM` `HIGH`) |
+| `Incident` | type, status (`REPORTED` `IN_PROGRESS` `RESOLVED`), description, reportedById |
+| `Notification` | userId, title, message, isRead, type |
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+---
 
-## License
+## GraphQL API
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+### Authentication
+
+```graphql
+# Register
+mutation {
+  register(input: {
+    email: "admin@example.com"
+    password: "password123"
+    firstName: "John"
+    lastName: "Doe"
+    role: ADMIN
+  }) {
+    accessToken
+    user { id email role }
+  }
+}
+
+# Login
+mutation {
+  login(input: { email: "admin@example.com", password: "password123" }) {
+    accessToken
+  }
+}
+
+# Get current user  [requires token]
+query {
+  me { id email firstName lastName role }
+}
+```
+
+> All protected operations require the header:
+> `Authorization: Bearer <accessToken>`
+
+### Vehicles
+
+```graphql
+mutation {
+  createVehicle(input: { plateNumber: "ABC-123", type: CAR, status: ACTIVE }) {
+    id plateNumber type status
+  }
+}
+
+query { vehicles { id plateNumber type status } }
+
+query {
+  vehicle(id: "VEHICLE_ID") {
+    plateNumber
+    positions { latitude longitude speed timestamp }
+  }
+}
+
+mutation {
+  recordGpsPosition(input: { vehicleId: "VEHICLE_ID" }) {
+    latitude longitude speed timestamp
+  }
+}
+
+query { vehicleHistory(vehicleId: "VEHICLE_ID") { latitude longitude speed timestamp } }
+```
+
+### Traffic Zones
+
+```graphql
+mutation {
+  createTrafficZone(input: {
+    name: "City Center"
+    latitude: 36.7372
+    longitude: 3.0865
+    radius: 500
+  }) {
+    id name level
+  }
+}
+
+# density < 30 → LOW | 30-69 → MEDIUM | ≥ 70 → HIGH
+mutation {
+  updateTrafficDensity(input: { zoneId: "ZONE_ID", density: 75 }) {
+    id name density level
+  }
+}
+
+query { trafficZones { id name density level } }
+query { congestedZones { id name density } }
+```
+
+### Incidents
+
+```graphql
+mutation {
+  declareIncident(input: {
+    type: ACCIDENT
+    description: "Collision on main road"
+    latitude: 36.740
+    longitude: 3.090
+  }) {
+    id type status
+  }
+}
+
+query { incidents { id type status description createdAt } }
+
+mutation {
+  updateIncidentStatus(input: { incidentId: "ID", status: IN_PROGRESS }) {
+    id status
+  }
+}
+```
+
+### Notifications
+
+```graphql
+mutation {
+  sendNotification(input: {
+    userId: "USER_ID"
+    title: "Traffic Alert"
+    message: "High congestion detected"
+    type: "TRAFFIC_ALERT"
+  }) {
+    id title
+  }
+}
+
+query { myNotifications { id title message isRead createdAt } }
+
+mutation { markNotificationAsRead(id: "NOTIFICATION_ID") { id isRead } }
+```
+
+---
+
+## Tests
+
+```bash
+# Run all unit tests
+npm test
+
+# Run tests for a specific service
+npm test -- --testPathPattern=vehicle-service
+
+# Coverage report
+npm run test:cov
+```
+
+---
+
+## Available Commands
+
+```bash
+nest start api-gateway --watch   # Start the platform
+npx prisma migrate dev           # Apply database migrations
+npx prisma studio                # Open Prisma database UI
+npm run lint                     # Lint and auto-fix
+npm run build                    # Build all apps
+```

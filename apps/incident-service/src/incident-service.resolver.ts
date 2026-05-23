@@ -1,7 +1,9 @@
 import { UseGuards } from '@nestjs/common';
 import { Args, ID, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
+import { Roles } from '@app/common/decorators/roles.decorator';
 import { JwtAuthGuard } from '@app/common/guards/jwt-auth.guard';
+import { RolesGuard } from '@app/common/guards/roles.guard';
 import { CreateIncidentInput } from './dto/create-incident.input';
 import { UpdateIncidentStatusInput } from './dto/update-incident-status.input';
 import { IncidentGql } from './models/incident-gql.model';
@@ -31,7 +33,8 @@ export class IncidentServiceResolver {
   }
 
   @Mutation(() => IncidentGql)
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
   updateIncidentStatus(@Args('input') input: UpdateIncidentStatusInput): Promise<any> {
     return this.incidentSvc.updateIncidentStatus(input.incidentId, input.status);
   }

@@ -1,7 +1,9 @@
 import { UseGuards } from '@nestjs/common';
 import { Args, ID, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
+import { Roles } from '@app/common/decorators/roles.decorator';
 import { JwtAuthGuard } from '@app/common/guards/jwt-auth.guard';
+import { RolesGuard } from '@app/common/guards/roles.guard';
 import { SendNotificationInput } from './dto/send-notification.input';
 import { NotificationGql } from './models/notification.model';
 import { NotificationServiceService } from './notification-service.service';
@@ -17,7 +19,8 @@ export class NotificationServiceResolver {
   }
 
   @Mutation(() => NotificationGql)
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
   sendNotification(@Args('input') input: SendNotificationInput): Promise<any> {
     return this.notifications.sendNotification(input);
   }

@@ -1,6 +1,8 @@
 import { UseGuards } from '@nestjs/common';
 import { Args, ID, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { Roles } from '@app/common/decorators/roles.decorator';
 import { JwtAuthGuard } from '@app/common/guards/jwt-auth.guard';
+import { RolesGuard } from '@app/common/guards/roles.guard';
 import { CreateZoneInput } from './dto/create-zone.input';
 import { UpdateDensityInput } from './dto/update-density.input';
 import { TrafficZoneGql } from './models/traffic-zone.model';
@@ -26,13 +28,15 @@ export class TrafficServiceResolver {
   }
 
   @Mutation(() => TrafficZoneGql)
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
   createTrafficZone(@Args('input') input: CreateZoneInput): Promise<any> {
     return this.traffic.createZone(input);
   }
 
   @Mutation(() => TrafficZoneGql)
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
   updateTrafficDensity(@Args('input') input: UpdateDensityInput): Promise<any> {
     return this.traffic.updateDensity(input);
   }

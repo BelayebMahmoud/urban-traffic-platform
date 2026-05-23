@@ -1,12 +1,16 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaClientService } from '@app/prisma-client';
 import { TrafficLevel } from '@prisma/client';
+import { EventsGateway } from '@app/common';
 import { CreateZoneInput } from './dto/create-zone.input';
 import { UpdateDensityInput } from './dto/update-density.input';
 
 @Injectable()
 export class TrafficServiceService {
-  constructor(private readonly prisma: PrismaClientService) {}
+  constructor(
+    private readonly prisma: PrismaClientService,
+    private readonly events: EventsGateway,
+  ) {}
 
   createZone(input: CreateZoneInput) {
     return this.prisma.trafficZone.create({ data: input });
@@ -25,10 +29,12 @@ export class TrafficServiceService {
   async updateDensity(input: UpdateDensityInput) {
     await this.getZone(input.zoneId);
     const level = this.classifyDensity(input.density);
-    return this.prisma.trafficZone.update({
+    const zone = await this.prisma.trafficZone.update({
       where: { id: input.zoneId },
       data: { density: input.density, level },
     });
+    this.events.emitZoneUpdated(zone);
+    return zone;
   }
 
   getCongestedZones() {
