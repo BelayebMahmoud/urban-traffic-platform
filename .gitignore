@@ -1,7 +1,9 @@
 # compiled output
 /dist
-/node_modules
 /build
+
+# Dependencies (all levels)
+node_modules/
 
 # Logs
 logs
@@ -56,3 +58,12 @@ pids
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 /generated/prisma
+
+# Next.js
+.next/
+frontend/.next/
+out/
+
+# TypeScript
+*.tsbuildinfo
+.eslintcache

@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -116,7 +116,7 @@ model Notification {
   title       String
   message     String   @db.Text
   isRead      Boolean  @default(false)
-  type        String
+  type        String   @default("GENERAL")
   referenceId String?
   createdAt   DateTime @default(now())
 }

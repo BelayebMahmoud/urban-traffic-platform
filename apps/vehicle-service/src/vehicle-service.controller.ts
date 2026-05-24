@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Request, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '@app/common/guards/jwt-auth.guard';
 import { SimulatePositionDto } from './dto/simulate-position.dto';
 import { VehicleServiceService } from './vehicle-service.service';
 
@@ -6,16 +7,16 @@ interface CreateVehicleBody {
   plateNumber: string;
   type: any;
   status: any;
-  ownerId: string;
 }
 
 @Controller('vehicles')
 export class VehicleServiceController {
-  constructor(private readonly vehicleServiceService: VehicleServiceService) {}
+  constructor(private readonly vehicleServiceService: VehicleServiceService) { }
 
   @Post()
-  createVehicle(@Body() body: CreateVehicleBody) {
-    return this.vehicleServiceService.createVehicle(body);
+  @UseGuards(JwtAuthGuard)
+  createVehicle(@Body() body: CreateVehicleBody, @Request() req: any) {
+    return this.vehicleServiceService.createVehicle({ ...body, ownerId: req.user.id });
   }
 
   @Get()
