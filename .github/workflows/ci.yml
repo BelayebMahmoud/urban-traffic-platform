@@ -105,10 +105,18 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Build
+      - name: Build (static export for Pages)
         run: npm run build
         env:
-          NEXT_PUBLIC_API_URL: http://localhost:3000
+          STATIC_EXPORT: 'true'
+          NEXT_PUBLIC_BASE_PATH: ''
+          NEXT_PUBLIC_API_URL: ${{ vars.PROD_API_URL || 'http://localhost:3000' }}
+
+      - name: Upload Pages artifact
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: frontend/out
 
   # ── Docker images ─────────────────────────────────────────────────────────────
   docker-build:
@@ -124,13 +132,13 @@ jobs:
     strategy:
       matrix:
         service:
-          - { name: api-gateway,          context: .,         dockerfile: apps/api-gateway/Dockerfile }
-          - { name: auth-service,          context: .,         dockerfile: apps/auth-service/Dockerfile }
-          - { name: vehicle-service,       context: .,         dockerfile: apps/vehicle-service/Dockerfile }
-          - { name: traffic-service,       context: .,         dockerfile: apps/traffic-service/Dockerfile }
-          - { name: incident-service,      context: .,         dockerfile: apps/incident-service/Dockerfile }
-          - { name: notification-service,  context: .,         dockerfile: apps/notification-service/Dockerfile }
-          - { name: frontend,             context: ./frontend, dockerfile: frontend/Dockerfile }
+          - { name: api-gateway, dockerfile: apps/api-gateway/Dockerfile, context: ., args: '' }
+          - { name: auth-service, dockerfile: Dockerfile.service, context: ., args: "SERVICE_NAME=auth-service\nSERVICE_PORT=3001" }
+          - { name: vehicle-service, dockerfile: Dockerfile.service, context: ., args: "SERVICE_NAME=vehicle-service\nSERVICE_PORT=3002" }
+          - { name: traffic-service, dockerfile: Dockerfile.service, context: ., args: "SERVICE_NAME=traffic-service\nSERVICE_PORT=3003" }
+          - { name: incident-service, dockerfile: Dockerfile.service, context: ., args: "SERVICE_NAME=incident-service\nSERVICE_PORT=3004" }
+          - { name: notification-service, dockerfile: Dockerfile.service, context: ., args: "SERVICE_NAME=notification-service\nSERVICE_PORT=3005" }
+          - { name: frontend, dockerfile: frontend/Dockerfile, context: ./frontend, args: '' }
 
     steps:
       - uses: actions/checkout@v4
@@ -159,6 +167,7 @@ jobs:
         with:
           context: ${{ matrix.service.context }}
           file: ${{ matrix.service.dockerfile }}
+          build-args: ${{ matrix.service.args }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
