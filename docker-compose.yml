@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
 
   postgres:
@@ -26,6 +24,22 @@ services:
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
     ports:
       - "5050:80"
+
+  # ── Frontend (dev — mounts source for hot reload) ───────────────────────────
+  frontend-dev:
+    image: node:22-alpine
+    container_name: urban_frontend_dev
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: sh -c "npm install && npm run dev"
+    ports:
+      - "3006:3006"
+    environment:
+      NEXT_PUBLIC_API_URL: http://host.docker.internal:3000
+    profiles:
+      - frontend
 
 volumes:
   postgres_data:
