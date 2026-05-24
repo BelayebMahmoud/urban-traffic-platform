@@ -36,6 +36,11 @@ export function NotificationCard({
       </div>
 
       <div className="flex-1 min-w-0">
+        {notification.title && (
+          <p className={cn('text-xs font-semibold uppercase tracking-wider mb-0.5', notification.isRead ? 'text-slate-600' : 'text-brand-400')}>
+            {notification.title}
+          </p>
+        )}
         <p
           className={cn(
             'text-sm',

@@ -72,8 +72,11 @@ export interface Incident {
 export interface Notification {
   id: string;
   userId: string;
+  title: string;
   message: string;
   isRead: boolean;
+  type: string;
+  referenceId?: string | null;
   createdAt: string;
 }
 

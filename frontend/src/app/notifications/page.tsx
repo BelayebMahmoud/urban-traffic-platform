@@ -17,8 +17,8 @@ export default function NotificationsPage() {
   const userId = user?.id ?? '';
 
   const { data, isLoading, error } = useQuery<Notification[]>({
-    queryKey: ['notifications', userId],
-    queryFn: () => notificationApi.list(userId),
+    queryKey: ['notifications'],
+    queryFn: () => notificationApi.list(),
     enabled: !!userId,
   });
 

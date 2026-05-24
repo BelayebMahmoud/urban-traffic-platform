@@ -1,12 +1,10 @@
 import { Module } from '@nestjs/common';
 import { PrismaClientModule } from '@app/prisma-client';
-import { VehicleServiceController } from './vehicle-service.controller';
 import { VehicleServiceResolver } from './vehicle-service.resolver';
 import { VehicleServiceService } from './vehicle-service.service';
 
 @Module({
   imports: [PrismaClientModule],
-  controllers: [VehicleServiceController],
   providers: [VehicleServiceService, VehicleServiceResolver],
   exports: [VehicleServiceService],
 })
