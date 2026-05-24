@@ -18,7 +18,7 @@ A full-stack urban traffic management system built with **NestJS**, **Next.js**,
 - [Environment Variables](#environment-variables)
 - [Frontend API Layer](#frontend-api-layer)
 - [API Reference](#api-reference)
-  - [Auth (GraphQL only)](#auth-graphql-only)
+  - [Auth](#auth)
   - [Vehicles](#vehicles)
   - [Traffic Zones](#traffic-zones)
   - [Incidents](#incidents)
@@ -35,7 +35,7 @@ A full-stack urban traffic management system built with **NestJS**, **Next.js**,
 ## Features
 
 - **Vehicle management** — register vehicles with an initial GPS position, track status (Active / Inactive / Maintenance)
-- **Live GPS tracking** — record positions manually or via simulation; every update broadcasts a `vehicle:position` socket event
+- **Live GPS tracking** — record positions via simulation; every update broadcasts a `vehicle:position` socket event
 - **Interactive map** — real-time Leaflet map on the dashboard showing vehicle markers, traffic zone overlays, and incident pins
 - **Traffic zones** — geographic circles with auto-classified congestion level (LOW / MEDIUM / HIGH) based on density
 - **Incident reporting** — declare and manage incidents (Accident, Construction, Road Closed, Traffic Jam) with lifecycle status
@@ -67,14 +67,14 @@ A full-stack urban traffic management system built with **NestJS**, **Next.js**,
 │  │ Resolver │ │Resolver │ │ Resolver │         │
 │  └──────────┘ └─────────┘ └──────────┘         │
 │  ┌──────────┐ ┌──────────────────────────┐     │
-│  │ Incident │ │   Notification Resolver  │     │
+│  │ Incident │ │  Notification Resolver   │     │
 │  │ Resolver │ └──────────────────────────┘     │
 │  └──────────┘                                  │
-│  ┌──────────────────────┐                      │
-│  │  Admin Controller    │  ← REST only          │
-│  │  GET  /admin/users   │                      │
-│  │  PATCH /admin/:id/   │                      │
-│  └──────────────────────┘                      │
+│  ┌──────────────────────────┐                  │
+│  │     Admin Controller     │  ← REST only     │
+│  │   GET  /admin/users      │                  │
+│  │   PATCH /admin/:id/toggle│                  │
+│  └──────────────────────────┘                  │
 │                                                 │
 │              EventsGateway (socket.io)          │
 └────────────────────┬────────────────────────────┘
@@ -236,18 +236,16 @@ Each method returns a clean typed value — pages receive `Vehicle[]`, `Incident
 
 All operations are exposed via **GraphQL at `POST /graphql`**. The only REST surface is admin user management.
 
-All protected operations require:
-```
-Authorization: Bearer <accessToken>
-```
+`🔒` = requires a valid JWT (`Authorization: Bearer <token>`).  
+`🔒 ADMIN` = requires JWT **and** the `ADMIN` role.
 
 Use the **Apollo Sandbox** at `http://localhost:3000/graphql` to explore the full schema and run queries interactively.
 
 ---
 
-### Auth (GraphQL only)
+### Auth
 
-Auth has no REST controller — login, register, and session queries are GraphQL-only.
+`register` and `login` are public. `me` requires a valid token.
 
 #### Register
 ```graphql
@@ -289,14 +287,16 @@ query {
 
 ### Vehicles
 
+All vehicle queries and mutations require authentication.
+
 ```graphql
-# List all vehicles
+# List all vehicles 🔒
 query { vehicles { id plateNumber type status ownerId createdAt } }
 
-# Single vehicle with full GPS history
+# Single vehicle with full GPS history 🔒
 query { vehicle(id: "ID") { id plateNumber positions { latitude longitude speed timestamp } } }
 
-# GPS history only
+# GPS history only 🔒
 query { vehicleHistory(vehicleId: "ID") { latitude longitude speed timestamp } }
 
 # Register a new vehicle 🔒
@@ -308,7 +308,7 @@ mutation { createVehicle(input: {
     longitude: 3.0420
   }) { id plateNumber } }
 
-# Record / simulate a GPS position
+# Record / simulate a GPS position 🔒
 mutation { recordGpsPosition(input: {
     vehicleId: "ID"
     latitude: 36.7530
@@ -323,14 +323,16 @@ mutation { recordGpsPosition(input: {
 
 ### Traffic Zones
 
+Listing zones is public. Creating and updating require ADMIN.
+
 ```graphql
-# List all zones
+# List all zones — public
 query { trafficZones { id name latitude longitude radius density level } }
 
-# Single zone
+# Single zone — public
 query { trafficZone(id: "ID") { id name density level } }
 
-# HIGH-density zones only
+# HIGH-density zones only — public
 query { congestedZones { id name density level } }
 
 # Create a zone 🔒 ADMIN
@@ -351,11 +353,13 @@ mutation { updateTrafficDensity(input: { zoneId: "ID" density: 75 }) { id densit
 
 ### Incidents
 
+Listing incidents is public. Declaring requires auth. Updating status requires ADMIN.
+
 ```graphql
-# List all incidents
+# List all incidents — public
 query { incidents { id type status description latitude longitude createdAt } }
 
-# Single incident
+# Single incident — public
 query { incident(id: "ID") { id type status description } }
 
 # Declare a new incident 🔒
@@ -380,6 +384,8 @@ mutation { updateIncidentStatus(input: {
 ---
 
 ### Notifications
+
+All notification operations require authentication.
 
 ```graphql
 # Fetch caller's notifications — userId resolved from JWT 🔒
@@ -427,10 +433,10 @@ Connect to `ws://localhost:3000` using socket.io-client.
 
 | Event | Payload | Triggered by |
 |---|---|---|
-| `vehicle:position` | `{ vehicleId, latitude, longitude, speed }` | Any GPS position record (create or simulate) |
-| `zone:updated` | `TrafficZone` object | Admin updates traffic density |
-| `incident:new` | `Incident` object | Any user declares an incident |
-| `notification:new` | `Notification` object | Admin sends a notification (room-targeted) |
+| `vehicle:position` | `{ vehicleId, latitude, longitude, speed }` | Any authenticated GPS position record |
+| `zone:updated` | `TrafficZone` object | ADMIN updates traffic density |
+| `incident:new` | `Incident` object | Any authenticated user declares an incident |
+| `notification:new` | `Notification` object | ADMIN sends a notification (room-targeted) |
 
 ### Quick connection test (browser console)
 
@@ -463,15 +469,17 @@ Every user has one role assigned at registration (defaults to `OPERATOR`). Pass 
 | Operation | Public | OPERATOR | ADMIN |
 |---|:---:|:---:|:---:|
 | `register` / `login` | ✓ | | |
+| List zones / incidents | ✓ | | |
 | `me` | | ✓ | ✓ |
-| List vehicles / zones / incidents | ✓ | | |
-| Create vehicle / declare incident | | ✓ | ✓ |
-| Record GPS position | ✓ | | |
+| List vehicles / GPS history | | ✓ | ✓ |
+| Create vehicle | | ✓ | ✓ |
+| Record GPS position | | ✓ | ✓ |
+| Declare incident | | ✓ | ✓ |
+| Get / mark notifications | | ✓ | ✓ |
 | Create traffic zone | | | ✓ |
 | Update traffic density | | | ✓ |
 | Update incident status | | | ✓ |
 | Send notification | | | ✓ |
-| Get / mark notifications | | ✓ | ✓ |
 | List users / toggle user | | | ✓ |
 
 ---
