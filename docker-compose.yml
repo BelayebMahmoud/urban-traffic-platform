@@ -25,6 +25,23 @@ services:
     ports:
       - "5050:80"
 
+  # ── Backend (api-gateway — includes all micro-services) ─────────────────────
+  api-gateway:
+    build:
+      context: .
+      dockerfile: apps/api-gateway/Dockerfile
+    container_name: urban_api_gateway
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    environment:
+      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      PORT: 3000
+    ports:
+      - "${API_GATEWAY_PORT:-3000}:3000"
+
   # ── Frontend (dev — mounts source for hot reload) ───────────────────────────
   frontend-dev:
     image: node:22-alpine
