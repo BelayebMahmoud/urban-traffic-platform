@@ -180,7 +180,7 @@ mutation {
     password: "password123"      # min 8 characters
     firstName: "Mahmoud"
     lastName: "Belayeb"
-    role: ADMIN                  # optional — defaults to OPERATOR
+    role: ADMIN                  # optional — defaults to OPERATOR.
   }) {
     accessToken
     user {

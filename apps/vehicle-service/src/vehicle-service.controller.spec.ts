@@ -2,47 +2,51 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { VehicleServiceController } from './vehicle-service.controller';
 import { VehicleServiceService } from './vehicle-service.service';
 
+const vehicleServiceMock = {
+  createVehicle: jest.fn(),
+  getVehicles: jest.fn(),
+  getVehicle: jest.fn(),
+  recordGpsPosition: jest.fn(),
+  getMovementHistory: jest.fn(),
+};
+
 describe('VehicleServiceController', () => {
-  let vehicleServiceController: VehicleServiceController;
+  let controller: VehicleServiceController;
 
   beforeEach(async () => {
-    const app: TestingModule = await Test.createTestingModule({
+    const module: TestingModule = await Test.createTestingModule({
       controllers: [VehicleServiceController],
-      providers: [VehicleServiceService],
+      providers: [{ provide: VehicleServiceService, useValue: vehicleServiceMock }],
     }).compile();
 
-    vehicleServiceController = app.get<VehicleServiceController>(VehicleServiceController);
+    controller = module.get<VehicleServiceController>(VehicleServiceController);
+    jest.clearAllMocks();
   });
 
-  describe('vehicle workflow', () => {
-    it('should add a vehicle, simulate a position and expose history', () => {
-      const vehicle = vehicleServiceController.addVehicle({
-        plateNumber: 'ab-123-cd',
-        type: 'CAR',
-        status: 'ACTIVE',
-        ownerName: 'Alice',
-      });
+  it('delegates createVehicle to the service', () => {
+    const body = { plateNumber: 'AB-123', type: 'CAR' as any, status: 'ACTIVE' as any, ownerId: 'u1' };
+    controller.createVehicle(body);
+    expect(vehicleServiceMock.createVehicle).toHaveBeenCalledWith(body);
+  });
 
-      const vehicles = vehicleServiceController.getVehicles();
-      expect(vehicles).toHaveLength(1);
-      expect(vehicles[0].plateNumber).toBe('AB-123-CD');
+  it('delegates getVehicles to the service', () => {
+    controller.getVehicles();
+    expect(vehicleServiceMock.getVehicles).toHaveBeenCalled();
+  });
 
-      const position = vehicleServiceController.saveSimulatedPosition(vehicle.id, {
-        latitude: 48.8566,
-        longitude: 2.3522,
-        speed: 50,
-      });
+  it('delegates getVehicle to the service with the correct id', () => {
+    controller.getVehicle('v1');
+    expect(vehicleServiceMock.getVehicle).toHaveBeenCalledWith('v1');
+  });
 
-      expect(position.vehicleId).toBe(vehicle.id);
-      expect(position.simulated).toBe(true);
+  it('delegates recordGpsPosition to the service with vehicleId and dto', () => {
+    const dto = { latitude: 36.8, longitude: 10.1, speed: 50 };
+    controller.recordGpsPosition('v1', dto as any);
+    expect(vehicleServiceMock.recordGpsPosition).toHaveBeenCalledWith('v1', dto);
+  });
 
-      const details = vehicleServiceController.getVehicleDetails(vehicle.id);
-      expect(details.totalPositions).toBe(1);
-      expect(details.latestPosition?.id).toBe(position.id);
-
-      const history = vehicleServiceController.getMovementHistory(vehicle.id);
-      expect(history).toHaveLength(1);
-      expect(history[0].id).toBe(position.id);
-    });
+  it('delegates getMovementHistory to the service with the correct vehicleId', () => {
+    controller.getMovementHistory('v1');
+    expect(vehicleServiceMock.getMovementHistory).toHaveBeenCalledWith('v1');
   });
 });
