@@ -34,7 +34,9 @@ describe('NotificationServiceService', () => {
       ],
     }).compile();
 
-    service = module.get<NotificationServiceService>(NotificationServiceService);
+    service = module.get<NotificationServiceService>(
+      NotificationServiceService,
+    );
     jest.clearAllMocks();
   });
 
@@ -48,7 +50,12 @@ describe('NotificationServiceService', () => {
 
     it('creates notification with the provided data and returns it', async () => {
       // ARRANGE
-      const fakeNotif = { id: 'n1', ...input, isRead: false, createdAt: new Date() };
+      const fakeNotif = {
+        id: 'n1',
+        ...input,
+        isRead: false,
+        createdAt: new Date(),
+      };
       prismaMock.notification.create.mockResolvedValue(fakeNotif);
 
       // ACT
@@ -56,7 +63,9 @@ describe('NotificationServiceService', () => {
 
       // ASSERT
       expect(result).toEqual(fakeNotif);
-      expect(prismaMock.notification.create).toHaveBeenCalledWith({ data: input });
+      expect(prismaMock.notification.create).toHaveBeenCalledWith({
+        data: input,
+      });
     });
 
     it('emits notification:new WebSocket event to the correct user room', async () => {
@@ -68,7 +77,10 @@ describe('NotificationServiceService', () => {
       await service.sendNotification(input as any);
 
       // ASSERT
-      expect(eventsGatewayMock.emitUserNotification).toHaveBeenCalledWith('user-1', fakeNotif);
+      expect(eventsGatewayMock.emitUserNotification).toHaveBeenCalledWith(
+        'user-1',
+        fakeNotif,
+      );
     });
 
     it('emits to userId from the input, not a hardcoded value', async () => {
@@ -81,7 +93,10 @@ describe('NotificationServiceService', () => {
       await service.sendNotification(otherInput as any);
 
       // ASSERT
-      expect(eventsGatewayMock.emitUserNotification).toHaveBeenCalledWith('operator-99', fakeNotif);
+      expect(eventsGatewayMock.emitUserNotification).toHaveBeenCalledWith(
+        'operator-99',
+        fakeNotif,
+      );
     });
   });
 
@@ -153,13 +168,18 @@ describe('NotificationServiceService', () => {
       // ARRANGE
       const existing = { id: 'n1', isRead: false };
       prismaMock.notification.findUnique.mockResolvedValue(existing);
-      prismaMock.notification.update.mockResolvedValue({ ...existing, isRead: true });
+      prismaMock.notification.update.mockResolvedValue({
+        ...existing,
+        isRead: true,
+      });
 
       // ACT
       await service.markAsRead('n1');
 
       // ASSERT
-      expect(prismaMock.notification.findUnique).toHaveBeenCalledWith({ where: { id: 'n1' } });
+      expect(prismaMock.notification.findUnique).toHaveBeenCalledWith({
+        where: { id: 'n1' },
+      });
     });
 
     it('throws NotFoundException when notification does not exist', async () => {
@@ -167,7 +187,9 @@ describe('NotificationServiceService', () => {
       prismaMock.notification.findUnique.mockResolvedValue(null);
 
       // ACT + ASSERT
-      await expect(service.markAsRead('nonexistent')).rejects.toThrow(NotFoundException);
+      await expect(service.markAsRead('nonexistent')).rejects.toThrow(
+        NotFoundException,
+      );
       expect(prismaMock.notification.update).not.toHaveBeenCalled();
     });
 
@@ -175,7 +197,10 @@ describe('NotificationServiceService', () => {
       // ARRANGE
       const existing = { id: 'n1', isRead: false };
       prismaMock.notification.findUnique.mockResolvedValue(existing);
-      prismaMock.notification.update.mockResolvedValue({ ...existing, isRead: true });
+      prismaMock.notification.update.mockResolvedValue({
+        ...existing,
+        isRead: true,
+      });
 
       // ACT
       await service.markAsRead('n1');

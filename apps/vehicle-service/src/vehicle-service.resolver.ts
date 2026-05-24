@@ -44,7 +44,9 @@ export class VehicleServiceResolver {
 
   @Query(() => [GpsPositionGql])
   @UseGuards(JwtAuthGuard)
-  vehicleHistory(@Args('vehicleId', { type: () => ID }) vehicleId: string): Promise<any[]> {
+  vehicleHistory(
+    @Args('vehicleId', { type: () => ID }) vehicleId: string,
+  ): Promise<any[]> {
     return this.vehicleSvc.getMovementHistory(vehicleId);
   }
 }

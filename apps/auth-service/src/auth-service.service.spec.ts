@@ -50,7 +50,12 @@ describe('AuthServiceService', () => {
 
     it('creates user and returns accessToken + user when email is new', async () => {
       // ARRANGE
-      const fakeUser = { id: 'uuid-1', ...registerInput, password: 'hashed', role: 'OPERATOR' };
+      const fakeUser = {
+        id: 'uuid-1',
+        ...registerInput,
+        password: 'hashed',
+        role: 'OPERATOR',
+      };
       prismaMock.user.findUnique.mockResolvedValue(null);
       (bcrypt.hash as jest.Mock).mockResolvedValue('hashed');
       prismaMock.user.create.mockResolvedValue(fakeUser);
@@ -59,12 +64,20 @@ describe('AuthServiceService', () => {
       const result = await service.register(registerInput as any);
 
       // ASSERT
-      expect(result).toMatchObject({ accessToken: 'mock.jwt.token', user: fakeUser });
+      expect(result).toMatchObject({
+        accessToken: 'mock.jwt.token',
+        user: fakeUser,
+      });
     });
 
     it('hashes the password before saving', async () => {
       // ARRANGE
-      const fakeUser = { id: 'uuid-1', ...registerInput, password: 'hashed', role: 'OPERATOR' };
+      const fakeUser = {
+        id: 'uuid-1',
+        ...registerInput,
+        password: 'hashed',
+        role: 'OPERATOR',
+      };
       prismaMock.user.findUnique.mockResolvedValue(null);
       (bcrypt.hash as jest.Mock).mockResolvedValue('hashed');
       prismaMock.user.create.mockResolvedValue(fakeUser);
@@ -78,7 +91,12 @@ describe('AuthServiceService', () => {
 
     it('sets role to OPERATOR by default when role is not provided', async () => {
       // ARRANGE
-      const fakeUser = { id: 'uuid-1', ...registerInput, password: 'hashed', role: 'OPERATOR' };
+      const fakeUser = {
+        id: 'uuid-1',
+        ...registerInput,
+        password: 'hashed',
+        role: 'OPERATOR',
+      };
       prismaMock.user.findUnique.mockResolvedValue(null);
       (bcrypt.hash as jest.Mock).mockResolvedValue('hashed');
       prismaMock.user.create.mockResolvedValue(fakeUser);
@@ -114,7 +132,9 @@ describe('AuthServiceService', () => {
       prismaMock.user.findUnique.mockResolvedValue({ id: 'existing-id' });
 
       // ACT + ASSERT
-      await expect(service.register(registerInput as any)).rejects.toThrow(ConflictException);
+      await expect(service.register(registerInput as any)).rejects.toThrow(
+        ConflictException,
+      );
       expect(prismaMock.user.create).not.toHaveBeenCalled();
     });
   });
@@ -137,7 +157,10 @@ describe('AuthServiceService', () => {
       const result = await service.login(loginInput as any);
 
       // ASSERT
-      expect(result).toMatchObject({ accessToken: 'mock.jwt.token', user: fakeUser });
+      expect(result).toMatchObject({
+        accessToken: 'mock.jwt.token',
+        user: fakeUser,
+      });
     });
 
     it('calls bcrypt.compare with plain password and stored hash', async () => {
@@ -149,7 +172,10 @@ describe('AuthServiceService', () => {
       await service.login(loginInput as any);
 
       // ASSERT
-      expect(bcrypt.compare).toHaveBeenCalledWith(loginInput.password, fakeUser.password);
+      expect(bcrypt.compare).toHaveBeenCalledWith(
+        loginInput.password,
+        fakeUser.password,
+      );
     });
 
     it('calls prisma.user.findUnique with the provided email', async () => {
@@ -161,7 +187,9 @@ describe('AuthServiceService', () => {
       await service.login(loginInput as any);
 
       // ASSERT
-      expect(prismaMock.user.findUnique).toHaveBeenCalledWith({ where: { email: loginInput.email } });
+      expect(prismaMock.user.findUnique).toHaveBeenCalledWith({
+        where: { email: loginInput.email },
+      });
     });
 
     it('throws UnauthorizedException when user is not found', async () => {
@@ -169,7 +197,9 @@ describe('AuthServiceService', () => {
       prismaMock.user.findUnique.mockResolvedValue(null);
 
       // ACT + ASSERT
-      await expect(service.login(loginInput as any)).rejects.toThrow(UnauthorizedException);
+      await expect(service.login(loginInput as any)).rejects.toThrow(
+        UnauthorizedException,
+      );
       expect(bcrypt.compare).not.toHaveBeenCalled();
     });
 
@@ -179,7 +209,9 @@ describe('AuthServiceService', () => {
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
       // ACT + ASSERT
-      await expect(service.login(loginInput as any)).rejects.toThrow(UnauthorizedException);
+      await expect(service.login(loginInput as any)).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
   });
 
@@ -194,7 +226,9 @@ describe('AuthServiceService', () => {
 
       // ASSERT
       expect(result).toEqual(fakeUser);
-      expect(prismaMock.user.findUnique).toHaveBeenCalledWith({ where: { id: 'uuid-1' } });
+      expect(prismaMock.user.findUnique).toHaveBeenCalledWith({
+        where: { id: 'uuid-1' },
+      });
     });
 
     it('returns null when user does not exist', async () => {

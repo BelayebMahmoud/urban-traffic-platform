@@ -10,6 +10,7 @@ import { VehicleServiceModule } from '../../vehicle-service/src/vehicle-service.
 import { TrafficServiceModule } from '../../traffic-service/src/traffic-service.module';
 import { IncidentServiceModule } from '../../incident-service/src/incident-service.module';
 import { NotificationServiceModule } from '../../notification-service/src/notification-service.module';
+import { HealthController } from './health/health.controller';
 
 @Module({
   imports: [
@@ -28,5 +29,6 @@ import { NotificationServiceModule } from '../../notification-service/src/notifi
     IncidentServiceModule,
     NotificationServiceModule,
   ],
+  controllers: [HealthController],
 })
 export class ApiGatewayModule {}

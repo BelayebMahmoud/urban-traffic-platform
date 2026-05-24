@@ -1,6 +1,15 @@
-import { Field, InputType } from '@nestjs/graphql';
+import { Field, Float, InputType } from '@nestjs/graphql';
 import { VehicleStatus, VehicleType } from '@prisma/client';
-import { IsEnum, IsNotEmpty, IsString, Length, Matches } from 'class-validator';
+import {
+  IsEnum,
+  IsNotEmpty,
+  IsNumber,
+  IsString,
+  Length,
+  Matches,
+  Max,
+  Min,
+} from 'class-validator';
 
 @InputType()
 export class CreateVehicleInput {
@@ -18,4 +27,16 @@ export class CreateVehicleInput {
   @Field(() => VehicleStatus)
   @IsEnum(VehicleStatus)
   status: VehicleStatus;
+
+  @Field(() => Float)
+  @IsNumber()
+  @Min(-90)
+  @Max(90)
+  latitude: number;
+
+  @Field(() => Float)
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
+  longitude: number;
 }

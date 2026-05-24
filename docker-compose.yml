@@ -1,29 +1,18 @@
 services:
 
-  postgres:
-    image: postgres:16-alpine
-    container_name: urban_traffic_postgres
+  mysql:
+    image: mysql:8
+    container_name: urban_traffic_mysql
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_NAME}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
     ports:
-      - "${DB_PORT}:5432"
+      - "${DB_PORT}:3306"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: urban_traffic_pgadmin
-    restart: unless-stopped
-    depends_on:
-      - postgres
-    environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
-    ports:
-      - "5050:80"
+      - mysql_data:/var/lib/mysql
 
   # ── Backend (api-gateway — includes all micro-services) ─────────────────────
   api-gateway:
@@ -33,9 +22,9 @@ services:
     container_name: urban_api_gateway
     restart: unless-stopped
     depends_on:
-      - postgres
+      - mysql
     environment:
-      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
+      DATABASE_URL: mysql://${DB_USER}:${DB_PASSWORD}@mysql:3306/${DB_NAME}
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
       PORT: 3000
@@ -59,4 +48,4 @@ services:
       - frontend
 
 volumes:
-  postgres_data:
+  mysql_data:

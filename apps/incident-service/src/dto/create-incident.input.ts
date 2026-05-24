@@ -1,6 +1,16 @@
 import { Field, Float, InputType } from '@nestjs/graphql';
 import { IncidentType } from '@prisma/client';
-import { IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, Max, MaxLength, Min } from 'class-validator';
+import {
+  IsEnum,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 
 @InputType()
 export class CreateIncidentInput {

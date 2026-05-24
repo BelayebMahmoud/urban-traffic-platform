@@ -1,4 +1,10 @@
-import { Field, Float, ID, ObjectType, registerEnumType } from '@nestjs/graphql';
+import {
+  Field,
+  Float,
+  ID,
+  ObjectType,
+  registerEnumType,
+} from '@nestjs/graphql';
 import { IncidentStatus, IncidentType } from '@prisma/client';
 
 registerEnumType(IncidentType, { name: 'IncidentType' });

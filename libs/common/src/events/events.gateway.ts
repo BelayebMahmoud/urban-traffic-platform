@@ -41,4 +41,13 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   emitUserNotification(userId: string, notification: any) {
     this.server.to(`user:${userId}`).emit('notification:new', notification);
   }
+
+  emitVehiclePosition(position: {
+    vehicleId: string;
+    latitude: number;
+    longitude: number;
+    speed: number | null;
+  }) {
+    this.server.emit('vehicle:position', position);
+  }
 }

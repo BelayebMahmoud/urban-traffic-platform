@@ -49,7 +49,12 @@ describe('IncidentServiceService', () => {
 
     it('creates incident and returns it', async () => {
       // ARRANGE
-      const fakeIncident = { id: 'i1', ...baseInput, status: IncidentStatus.REPORTED, reportedById: 'user-1' };
+      const fakeIncident = {
+        id: 'i1',
+        ...baseInput,
+        status: IncidentStatus.REPORTED,
+        reportedById: 'user-1',
+      };
       prismaMock.incident.create.mockResolvedValue(fakeIncident);
 
       // ACT
@@ -68,7 +73,9 @@ describe('IncidentServiceService', () => {
 
       // ASSERT
       expect(prismaMock.incident.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({ description: 'Collision on main road' }),
+        data: expect.objectContaining({
+          description: 'Collision on main road',
+        }),
       });
     });
 
@@ -121,12 +128,18 @@ describe('IncidentServiceService', () => {
       await service.declareIncident(baseInput as any, 'user-1');
 
       // ASSERT
-      expect(eventsGatewayMock.emitNewIncident).toHaveBeenCalledWith(fakeIncident);
+      expect(eventsGatewayMock.emitNewIncident).toHaveBeenCalledWith(
+        fakeIncident,
+      );
     });
 
     it('handles all incident types (CONSTRUCTION, ROAD_CLOSED, TRAFFIC_JAM)', async () => {
       // ARRANGE
-      for (const type of [IncidentType.CONSTRUCTION, IncidentType.ROAD_CLOSED, IncidentType.TRAFFIC_JAM]) {
+      for (const type of [
+        IncidentType.CONSTRUCTION,
+        IncidentType.ROAD_CLOSED,
+        IncidentType.TRAFFIC_JAM,
+      ]) {
         prismaMock.incident.create.mockResolvedValue({ id: 'i1', type });
 
         // ACT
@@ -152,7 +165,9 @@ describe('IncidentServiceService', () => {
 
       // ASSERT
       expect(result).toEqual(fakeIncidents);
-      expect(prismaMock.incident.findMany).toHaveBeenCalledWith({ orderBy: { createdAt: 'desc' } });
+      expect(prismaMock.incident.findMany).toHaveBeenCalledWith({
+        orderBy: { createdAt: 'desc' },
+      });
     });
 
     it('returns empty array when no incidents exist', async () => {
@@ -170,7 +185,11 @@ describe('IncidentServiceService', () => {
   describe('getIncident(id)', () => {
     it('returns incident when found', async () => {
       // ARRANGE
-      const fakeIncident = { id: 'i1', type: IncidentType.TRAFFIC_JAM, status: IncidentStatus.REPORTED };
+      const fakeIncident = {
+        id: 'i1',
+        type: IncidentType.TRAFFIC_JAM,
+        status: IncidentStatus.REPORTED,
+      };
       prismaMock.incident.findUnique.mockResolvedValue(fakeIncident);
 
       // ACT
@@ -178,7 +197,9 @@ describe('IncidentServiceService', () => {
 
       // ASSERT
       expect(result).toEqual(fakeIncident);
-      expect(prismaMock.incident.findUnique).toHaveBeenCalledWith({ where: { id: 'i1' } });
+      expect(prismaMock.incident.findUnique).toHaveBeenCalledWith({
+        where: { id: 'i1' },
+      });
     });
 
     it('throws NotFoundException when incident does not exist', async () => {
@@ -186,7 +207,9 @@ describe('IncidentServiceService', () => {
       prismaMock.incident.findUnique.mockResolvedValue(null);
 
       // ACT + ASSERT
-      await expect(service.getIncident('nonexistent')).rejects.toThrow(NotFoundException);
+      await expect(service.getIncident('nonexistent')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -199,7 +222,10 @@ describe('IncidentServiceService', () => {
       prismaMock.incident.update.mockResolvedValue(updated);
 
       // ACT
-      const result = await service.updateIncidentStatus('i1', IncidentStatus.IN_PROGRESS);
+      const result = await service.updateIncidentStatus(
+        'i1',
+        IncidentStatus.IN_PROGRESS,
+      );
 
       // ASSERT
       expect(result).toEqual(updated);
@@ -217,7 +243,10 @@ describe('IncidentServiceService', () => {
       prismaMock.incident.update.mockResolvedValue(updated);
 
       // ACT
-      const result = await service.updateIncidentStatus('i1', IncidentStatus.RESOLVED);
+      const result = await service.updateIncidentStatus(
+        'i1',
+        IncidentStatus.RESOLVED,
+      );
 
       // ASSERT
       expect(result).toEqual(updated);
@@ -227,13 +256,18 @@ describe('IncidentServiceService', () => {
       // ARRANGE
       const existing = { id: 'i1', status: IncidentStatus.REPORTED };
       prismaMock.incident.findUnique.mockResolvedValue(existing);
-      prismaMock.incident.update.mockResolvedValue({ ...existing, status: IncidentStatus.IN_PROGRESS });
+      prismaMock.incident.update.mockResolvedValue({
+        ...existing,
+        status: IncidentStatus.IN_PROGRESS,
+      });
 
       // ACT
       await service.updateIncidentStatus('i1', IncidentStatus.IN_PROGRESS);
 
       // ASSERT
-      expect(prismaMock.incident.findUnique).toHaveBeenCalledWith({ where: { id: 'i1' } });
+      expect(prismaMock.incident.findUnique).toHaveBeenCalledWith({
+        where: { id: 'i1' },
+      });
     });
 
     it('throws NotFoundException when incident does not exist', async () => {
@@ -241,7 +275,9 @@ describe('IncidentServiceService', () => {
       prismaMock.incident.findUnique.mockResolvedValue(null);
 
       // ACT + ASSERT
-      await expect(service.updateIncidentStatus('nonexistent', IncidentStatus.RESOLVED)).rejects.toThrow(NotFoundException);
+      await expect(
+        service.updateIncidentStatus('nonexistent', IncidentStatus.RESOLVED),
+      ).rejects.toThrow(NotFoundException);
       expect(prismaMock.incident.update).not.toHaveBeenCalled();
     });
   });

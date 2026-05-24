@@ -1,4 +1,8 @@
-import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaClientService } from '@app/prisma-client';
 import * as bcrypt from 'bcryptjs';
@@ -11,10 +15,12 @@ export class AuthServiceService {
   constructor(
     private readonly prisma: PrismaClientService,
     private readonly jwt: JwtService,
-  ) { }
+  ) {}
 
   async register(input: RegisterInput): Promise<AuthResponse> {
-    const exists = await this.prisma.user.findUnique({ where: { email: input.email } });
+    const exists = await this.prisma.user.findUnique({
+      where: { email: input.email },
+    });
     if (exists) throw new ConflictException('Email already in use');
 
     const hashed = await bcrypt.hash(input.password, 10);
@@ -32,13 +38,18 @@ export class AuthServiceService {
   }
 
   async login(input: LoginInput): Promise<AuthResponse> {
-    const user = await this.prisma.user.findUnique({ where: { email: input.email } });
+    const user = await this.prisma.user.findUnique({
+      where: { email: input.email },
+    });
     if (!user) throw new UnauthorizedException('Invalid credentials');
 
     const valid = await bcrypt.compare(input.password, user.password);
     if (!valid) throw new UnauthorizedException('Invalid credentials');
 
-    if (!user.isActive) throw new UnauthorizedException('Account is deactivated. Contact an administrator.');
+    if (!user.isActive)
+      throw new UnauthorizedException(
+        'Account is deactivated. Contact an administrator.',
+      );
 
     return { accessToken: this.sign(user), user };
   }
@@ -49,7 +60,15 @@ export class AuthServiceService {
 
   getUsers() {
     return this.prisma.user.findMany({
-      select: { id: true, email: true, firstName: true, lastName: true, role: true, isActive: true, createdAt: true },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        isActive: true,
+        createdAt: true,
+      },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -59,7 +78,15 @@ export class AuthServiceService {
     return this.prisma.user.update({
       where: { id },
       data: { isActive: !user.isActive },
-      select: { id: true, email: true, firstName: true, lastName: true, role: true, isActive: true, createdAt: true },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        isActive: true,
+        createdAt: true,
+      },
     });
   }
 

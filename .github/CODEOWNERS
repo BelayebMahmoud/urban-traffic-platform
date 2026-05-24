@@ -1,0 +1,31 @@
+# CODEOWNERS — Urban Traffic Platform
+# Defines who must review changes in each area.
+# Format: <pattern>  <owner> [<owner>...]
+# Docs: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owner for everything
+*                                   @team/backend
+
+# Auth service — security-sensitive code requires security team review
+apps/auth-service/                  @team/security @team/backend
+libs/common/src/guards/             @team/security @team/backend
+libs/common/src/strategies/         @team/security @team/backend
+
+# API Gateway
+apps/api-gateway/                   @team/backend
+
+# Shared libraries
+libs/                               @team/backend
+
+# Database schema — any schema change requires backend lead
+prisma/                             @team/backend
+
+# CI/CD and infrastructure
+.github/                            @team/devops
+docker-compose*.yml                 @team/devops
+apps/api-gateway/Dockerfile         @team/devops
+.dockerignore                       @team/devops
+
+# Documentation
+README.md                           @team/backend @team/devops
+CLAUDE.md                           @team/backend

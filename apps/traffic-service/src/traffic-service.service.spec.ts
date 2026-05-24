@@ -72,8 +72,18 @@ describe('TrafficServiceService', () => {
   describe('createZone()', () => {
     it('creates and returns the traffic zone', async () => {
       // ARRANGE
-      const input = { name: 'Zone A', latitude: 36.8, longitude: 10.1, radius: 500 };
-      const fakeZone = { id: 'z1', ...input, density: 0, level: TrafficLevel.LOW };
+      const input = {
+        name: 'Zone A',
+        latitude: 36.8,
+        longitude: 10.1,
+        radius: 500,
+      };
+      const fakeZone = {
+        id: 'z1',
+        ...input,
+        density: 0,
+        level: TrafficLevel.LOW,
+      };
       prismaMock.trafficZone.create.mockResolvedValue(fakeZone);
 
       // ACT
@@ -81,7 +91,9 @@ describe('TrafficServiceService', () => {
 
       // ASSERT
       expect(result).toEqual(fakeZone);
-      expect(prismaMock.trafficZone.create).toHaveBeenCalledWith({ data: input });
+      expect(prismaMock.trafficZone.create).toHaveBeenCalledWith({
+        data: input,
+      });
     });
   });
 
@@ -96,7 +108,9 @@ describe('TrafficServiceService', () => {
 
       // ASSERT
       expect(result).toEqual(fakeZones);
-      expect(prismaMock.trafficZone.findMany).toHaveBeenCalledWith({ orderBy: { createdAt: 'desc' } });
+      expect(prismaMock.trafficZone.findMany).toHaveBeenCalledWith({
+        orderBy: { createdAt: 'desc' },
+      });
     });
 
     it('returns empty array when no zones exist', async () => {
@@ -122,7 +136,9 @@ describe('TrafficServiceService', () => {
 
       // ASSERT
       expect(result).toEqual(fakeZone);
-      expect(prismaMock.trafficZone.findUnique).toHaveBeenCalledWith({ where: { id: 'z1' } });
+      expect(prismaMock.trafficZone.findUnique).toHaveBeenCalledWith({
+        where: { id: 'z1' },
+      });
     });
 
     it('throws NotFoundException when zone does not exist', async () => {
@@ -130,15 +146,26 @@ describe('TrafficServiceService', () => {
       prismaMock.trafficZone.findUnique.mockResolvedValue(null);
 
       // ACT + ASSERT
-      await expect(service.getZone('nonexistent')).rejects.toThrow(NotFoundException);
+      await expect(service.getZone('nonexistent')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
   describe('updateDensity()', () => {
     it('classifies density ≥70 as HIGH and persists it', async () => {
       // ARRANGE
-      const existingZone = { id: 'z1', name: 'Zone A', density: 0, level: TrafficLevel.LOW };
-      const updatedZone = { ...existingZone, density: 80, level: TrafficLevel.HIGH };
+      const existingZone = {
+        id: 'z1',
+        name: 'Zone A',
+        density: 0,
+        level: TrafficLevel.LOW,
+      };
+      const updatedZone = {
+        ...existingZone,
+        density: 80,
+        level: TrafficLevel.HIGH,
+      };
       prismaMock.trafficZone.findUnique.mockResolvedValue(existingZone);
       prismaMock.trafficZone.update.mockResolvedValue(updatedZone);
 
@@ -156,7 +183,11 @@ describe('TrafficServiceService', () => {
     it('classifies density between 30 and 69 as MEDIUM', async () => {
       // ARRANGE
       const existingZone = { id: 'z1', density: 0, level: TrafficLevel.LOW };
-      const updatedZone = { ...existingZone, density: 50, level: TrafficLevel.MEDIUM };
+      const updatedZone = {
+        ...existingZone,
+        density: 50,
+        level: TrafficLevel.MEDIUM,
+      };
       prismaMock.trafficZone.findUnique.mockResolvedValue(existingZone);
       prismaMock.trafficZone.update.mockResolvedValue(updatedZone);
 
@@ -173,7 +204,11 @@ describe('TrafficServiceService', () => {
     it('classifies density below 30 as LOW', async () => {
       // ARRANGE
       const existingZone = { id: 'z1', density: 80, level: TrafficLevel.HIGH };
-      const updatedZone = { ...existingZone, density: 10, level: TrafficLevel.LOW };
+      const updatedZone = {
+        ...existingZone,
+        density: 10,
+        level: TrafficLevel.LOW,
+      };
       prismaMock.trafficZone.findUnique.mockResolvedValue(existingZone);
       prismaMock.trafficZone.update.mockResolvedValue(updatedZone);
 
@@ -190,7 +225,11 @@ describe('TrafficServiceService', () => {
     it('emits zone:updated WebSocket event after saving', async () => {
       // ARRANGE
       const existingZone = { id: 'z1', density: 0, level: TrafficLevel.LOW };
-      const updatedZone = { ...existingZone, density: 80, level: TrafficLevel.HIGH };
+      const updatedZone = {
+        ...existingZone,
+        density: 80,
+        level: TrafficLevel.HIGH,
+      };
       prismaMock.trafficZone.findUnique.mockResolvedValue(existingZone);
       prismaMock.trafficZone.update.mockResolvedValue(updatedZone);
 
@@ -198,7 +237,9 @@ describe('TrafficServiceService', () => {
       await service.updateDensity({ zoneId: 'z1', density: 80 });
 
       // ASSERT
-      expect(eventsGatewayMock.emitZoneUpdated).toHaveBeenCalledWith(updatedZone);
+      expect(eventsGatewayMock.emitZoneUpdated).toHaveBeenCalledWith(
+        updatedZone,
+      );
     });
 
     it('throws NotFoundException when zone does not exist', async () => {
@@ -206,7 +247,9 @@ describe('TrafficServiceService', () => {
       prismaMock.trafficZone.findUnique.mockResolvedValue(null);
 
       // ACT + ASSERT
-      await expect(service.updateDensity({ zoneId: 'nonexistent', density: 80 })).rejects.toThrow(NotFoundException);
+      await expect(
+        service.updateDensity({ zoneId: 'nonexistent', density: 80 }),
+      ).rejects.toThrow(NotFoundException);
       expect(prismaMock.trafficZone.update).not.toHaveBeenCalled();
       expect(eventsGatewayMock.emitZoneUpdated).not.toHaveBeenCalled();
     });

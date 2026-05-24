@@ -1,0 +1,56 @@
+version: 2
+
+updates:
+  # ── Backend monorepo (root package.json) ────────────────────────
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '08:00'
+      timezone: Africa/Algiers
+    reviewers:
+      - team/backend
+    labels:
+      - dependencies
+      - backend
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+    ignore:
+      # Pin major versions manually
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
+
+  # ── Docker images ────────────────────────────────────────────────
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '08:00'
+    reviewers:
+      - team/devops
+    labels:
+      - dependencies
+      - docker
+
+  # ── GitHub Actions ───────────────────────────────────────────────
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '08:00'
+    reviewers:
+      - team/devops
+    labels:
+      - dependencies
+      - github-actions
+    groups:
+      all-actions:
+        update-types:
+          - minor
+          - patch

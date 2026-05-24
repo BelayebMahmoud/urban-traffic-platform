@@ -7,6 +7,8 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   app.enableCors();
   await app.listen(process.env.API_GATEWAY_PORT ?? 3000);
-  console.log(`API Gateway running on http://localhost:${process.env.API_GATEWAY_PORT ?? 3000}/graphql`);
+  console.log(
+    `API Gateway running on http://localhost:${process.env.API_GATEWAY_PORT ?? 3000}/graphql`,
+  );
 }
 bootstrap();

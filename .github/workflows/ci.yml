@@ -1,3 +1,18 @@
+# ================================================================
+# CI — Lint, Test & Build
+# Urban Traffic Platform (NestJS monorepo · GraphQL · MySQL 8)
+# ================================================================
+#
+# Required GitHub Secrets:
+#   JWT_SECRET            — Secret key used to sign JWT tokens
+#
+# Required GitHub Variables (optional, fallback values are used):
+#   PROD_API_URL          — Production API URL (used by frontend build)
+#
+# Note: unit tests mock all Prisma calls — no real database needed.
+# The MySQL service is only used by integration smoke tests (docker-compose.test.yml).
+# ================================================================
+
 name: CI — Lint, Test & Build
 
 on:
@@ -6,38 +21,30 @@ on:
   pull_request:
     branches: [main, develop]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 env:
-  NODE_VERSION: '22'
+  NODE_VERSION: '20'
   REGISTRY: ghcr.io
   IMAGE_PREFIX: ${{ github.repository_owner }}/urban-traffic
 
 jobs:
-  # ── Backend ─────────────────────────────────────────────────────────────────
+  # ── Job 1: Backend — Lint & Unit Tests ──────────────────────────────────────
   backend-lint-test:
-    name: Backend — Lint & Test
+    name: Backend — Lint & Unit Tests
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: .
-
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: urban_user
-          POSTGRES_PASSWORD: urban_pass
-          POSTGRES_DB: urban_traffic
-        ports: ['5432:5432']
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+    timeout-minutes: 15
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -48,26 +55,36 @@ jobs:
 
       - name: Generate Prisma client
         run: npx prisma generate
-        env:
-          DATABASE_URL: postgresql://urban_user:urban_pass@localhost:5432/urban_traffic
 
-      - name: Lint
+      - name: Run ESLint
         run: npm run lint
 
-      - name: Run unit tests
+      - name: Run unit tests (all Prisma calls are mocked — no DB required)
         run: npm test -- --passWithNoTests --forceExit
         env:
-          DATABASE_URL: postgresql://urban_user:urban_pass@localhost:5432/urban_traffic
-          JWT_SECRET: ci-test-secret
+          JWT_SECRET: ${{ secrets.JWT_SECRET || 'ci-test-secret' }}
+          NODE_ENV: test
 
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-coverage
+          path: coverage/
+          retention-days: 7
+
+  # ── Job 2: Backend — Build ────────────────────────────────────────────────────
   backend-build:
-    name: Backend — Build
+    name: Backend — Build (api-gateway)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: backend-lint-test
-    steps:
-      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -76,36 +93,63 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build all apps
-        run: npm run build
-        env:
-          DATABASE_URL: postgresql://urban_user:urban_pass@localhost:5432/urban_traffic
+      - name: Generate Prisma client
+        run: npx prisma generate
 
-  # ── Frontend ─────────────────────────────────────────────────────────────────
+      - name: Build api-gateway
+        # Explicitly builds api-gateway — avoids the stale urban-traffic-platform default
+        run: npx nest build api-gateway
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-dist
+          path: dist/
+          retention-days: 3
+
+  # ── Job 3: Frontend — Lint & Build ───────────────────────────────────────────
   frontend-lint-build:
     name: Frontend — Lint & Build
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    # Skip if no frontend directory exists
     defaults:
       run:
         working-directory: frontend
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Check if frontend directory exists
+        id: frontend_check
+        run: |
+          if [ -d "../frontend" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+        working-directory: .
+
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
+        if: steps.frontend_check.outputs.exists == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Install dependencies
+      - name: Install frontend dependencies
+        if: steps.frontend_check.outputs.exists == 'true'
         run: npm ci
 
-      - name: Lint
+      - name: Run frontend lint
+        if: steps.frontend_check.outputs.exists == 'true'
         run: npm run lint
 
-      - name: Build (static export for Pages)
+      - name: Build frontend (static export)
+        if: steps.frontend_check.outputs.exists == 'true'
         run: npm run build
         env:
           STATIC_EXPORT: 'true'
@@ -113,15 +157,19 @@ jobs:
           NEXT_PUBLIC_API_URL: ${{ vars.PROD_API_URL || 'http://localhost:3000' }}
 
       - name: Upload Pages artifact
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        if: >-
+          steps.frontend_check.outputs.exists == 'true' &&
+          github.ref == 'refs/heads/main' &&
+          github.event_name == 'push'
         uses: actions/upload-pages-artifact@v3
         with:
           path: frontend/out
 
-  # ── Docker images ─────────────────────────────────────────────────────────────
+  # ── Job 4: Docker — Build & Push (main branch only) ──────────────────────────
   docker-build:
-    name: Build & Push Docker Images
+    name: Docker — Build & Push (${{ matrix.service.name }})
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     needs: [backend-build, frontend-lint-build]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
@@ -130,30 +178,29 @@ jobs:
       packages: write
 
     strategy:
+      fail-fast: false
       matrix:
         service:
-          - { name: api-gateway, dockerfile: apps/api-gateway/Dockerfile, context: ., args: '' }
-          - { name: auth-service, dockerfile: Dockerfile.service, context: ., args: "SERVICE_NAME=auth-service\nSERVICE_PORT=3001" }
-          - { name: vehicle-service, dockerfile: Dockerfile.service, context: ., args: "SERVICE_NAME=vehicle-service\nSERVICE_PORT=3002" }
-          - { name: traffic-service, dockerfile: Dockerfile.service, context: ., args: "SERVICE_NAME=traffic-service\nSERVICE_PORT=3003" }
-          - { name: incident-service, dockerfile: Dockerfile.service, context: ., args: "SERVICE_NAME=incident-service\nSERVICE_PORT=3004" }
-          - { name: notification-service, dockerfile: Dockerfile.service, context: ., args: "SERVICE_NAME=notification-service\nSERVICE_PORT=3005" }
-          - { name: frontend, dockerfile: frontend/Dockerfile, context: ./frontend, args: '' }
+          - { name: api-gateway, dockerfile: apps/api-gateway/Dockerfile, context: . }
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Log in to GHCR
+      - name: Set up QEMU (multi-platform)
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Extract metadata
+      - name: Extract image metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -162,14 +209,14 @@ jobs:
             type=sha,prefix=sha-
             type=raw,value=latest
 
-      - name: Build and push
+      - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
           context: ${{ matrix.service.context }}
           file: ${{ matrix.service.dockerfile }}
-          build-args: ${{ matrix.service.args }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          platforms: linux/amd64,linux/arm64
           cache-from: type=gha
-          cache-to:   type=gha,mode=max
+          cache-to: type=gha,mode=max

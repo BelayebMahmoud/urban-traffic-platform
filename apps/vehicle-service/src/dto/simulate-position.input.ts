@@ -7,19 +7,17 @@ export class SimulatePositionInput {
   @IsUUID()
   vehicleId: string;
 
-  @Field(() => Float, { nullable: true })
+  @Field(() => Float)
   @IsNumber()
-  @IsOptional()
   @Min(-90)
   @Max(90)
-  latitude?: number;
+  latitude: number;
 
-  @Field(() => Float, { nullable: true })
+  @Field(() => Float)
   @IsNumber()
-  @IsOptional()
   @Min(-180)
   @Max(180)
-  longitude?: number;
+  longitude: number;
 
   @Field(() => Float, { nullable: true })
   @IsNumber()

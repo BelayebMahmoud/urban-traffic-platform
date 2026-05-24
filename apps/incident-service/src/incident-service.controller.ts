@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Param, Patch, Post, Request, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Request,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '@app/common/guards/jwt-auth.guard';
 import { IncidentStatus } from '@prisma/client';
 import { IncidentServiceService } from './incident-service.service';
@@ -13,12 +22,17 @@ interface CreateIncidentBody {
 
 @Controller('incidents')
 export class IncidentServiceController {
-  constructor(private readonly incidentServiceService: IncidentServiceService) { }
+  constructor(
+    private readonly incidentServiceService: IncidentServiceService,
+  ) {}
 
   @Post()
   @UseGuards(JwtAuthGuard)
   declareIncident(@Body() body: CreateIncidentBody, @Request() req: any) {
-    return this.incidentServiceService.declareIncident(body as any, req.user.id);
+    return this.incidentServiceService.declareIncident(
+      body as any,
+      req.user.id,
+    );
   }
 
   @Get()

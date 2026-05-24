@@ -1,0 +1,65 @@
+# ================================================================
+# docker-compose.test.yml — CI Integration Test Stack
+# Urban Traffic Platform
+#
+# Usage:
+#   docker compose -f docker-compose.test.yml up -d --build
+#   docker compose -f docker-compose.test.yml down -v
+#
+# Environment variables (passed from CI or shell):
+#   MYSQL_ROOT_PASSWORD  — MySQL root password
+#   MYSQL_DATABASE       — Database name
+#   JWT_SECRET           — JWT signing secret
+# ================================================================
+
+name: urban-traffic-test
+
+services:
+
+  # ── MySQL 8 ────────────────────────────────────────────────────
+  mysql:
+    image: mysql:8.0
+    restart: 'no'
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-ci-root-password}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-urban_traffic_test}
+    ports:
+      - '3306:3306'
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-u', 'root', '-p${MYSQL_ROOT_PASSWORD:-ci-root-password}']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - test-network
+
+  # ── API Gateway (all services bundled) ─────────────────────────
+  api-gateway:
+    build:
+      context: .
+      dockerfile: apps/api-gateway/Dockerfile
+    restart: 'no'
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: mysql://root:${MYSQL_ROOT_PASSWORD:-ci-root-password}@mysql:3306/${MYSQL_DATABASE:-urban_traffic_test}
+      JWT_SECRET: ${JWT_SECRET:-ci-test-secret}
+      JWT_EXPIRES_IN: '7d'
+      NODE_ENV: test
+      PORT: '3000'
+    ports:
+      - '3000:3000'
+    healthcheck:
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:3000/health']
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+    networks:
+      - test-network
+
+networks:
+  test-network:
+    driver: bridge

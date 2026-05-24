@@ -35,7 +35,12 @@ export class IncidentServiceResolver {
   @Mutation(() => IncidentGql)
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
-  updateIncidentStatus(@Args('input') input: UpdateIncidentStatusInput): Promise<any> {
-    return this.incidentSvc.updateIncidentStatus(input.incidentId, input.status);
+  updateIncidentStatus(
+    @Args('input') input: UpdateIncidentStatusInput,
+  ): Promise<any> {
+    return this.incidentSvc.updateIncidentStatus(
+      input.incidentId,
+      input.status,
+    );
   }
 }

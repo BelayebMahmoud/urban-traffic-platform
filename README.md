@@ -1,5 +1,8 @@
 # Urban Traffic Platform
 
+[![CI](https://github.com/MahmoudBELAYEB/urban-traffic-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/MahmoudBELAYEB/urban-traffic-platform/actions/workflows/ci.yml)
+[![Security Scan](https://github.com/MahmoudBELAYEB/urban-traffic-platform/actions/workflows/security.yml/badge.svg)](https://github.com/MahmoudBELAYEB/urban-traffic-platform/actions/workflows/security.yml)
+
 A NestJS monorepo for urban traffic management exposing a single **GraphQL API** and real-time **WebSocket** events.
 
 ---
@@ -692,6 +695,29 @@ mutation {
   }
 }
 ```
+
+---
+
+## CI/CD
+
+| Workflow | Trigger | Purpose |
+|---|---|---|
+| **CI** (`ci.yml`) | Push / PR to `main` or `develop` | Lint → unit tests → build → Docker push (main only) |
+| **CD** (`cd.yml`) | After CI succeeds on `main` | Deploy frontend to GitHub Pages, backend to VPS via SSH |
+| **Security** (`security.yml`) | Push to `main` + every Monday 08:00 UTC | `npm audit`, CodeQL static analysis, Trivy container scan |
+
+### Required GitHub Secrets
+
+Go to **Settings → Secrets and variables → Actions** and add:
+
+| Secret | Description |
+|---|---|
+| `JWT_SECRET` | JWT signing key (any long random string) |
+| `MYSQL_ROOT_PASSWORD` | MySQL root password for CI integration tests |
+| `MYSQL_DATABASE` | Database name for CI (e.g. `urban_traffic_test`) |
+| `DEPLOY_HOST` | VPS hostname or IP |
+| `DEPLOY_USER` | SSH user on the VPS |
+| `DEPLOY_KEY` | SSH private key for VPS access |
 
 ---
 

@@ -1,0 +1,40 @@
+# Dependencies
+node_modules
+**/node_modules
+
+# Build output
+dist
+**/dist
+
+# Git
+.git
+.gitignore
+.github
+
+# Documentation
+*.md
+docs/
+
+# Test artifacts
+coverage
+**/*.spec.ts
+**/*.e2e-spec.ts
+**/test/
+
+# Environment files — NEVER bake secrets into images
+.env
+.env.*
+!.env.example
+
+# IDE and OS
+.vscode
+.idea
+*.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Frontend (separate build context)
+frontend/

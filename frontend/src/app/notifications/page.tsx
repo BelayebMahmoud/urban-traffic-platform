@@ -12,53 +12,65 @@ import { notificationApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 
 export default function NotificationsPage() {
-    const qc = useQueryClient();
-    const { user } = useAuth();
-    const userId = user?.id ?? '';
+  const qc = useQueryClient();
+  const { user } = useAuth();
+  const userId = user?.id ?? '';
 
-    const { data, isLoading, error } = useQuery<Notification[]>({
-        queryKey: ['notifications', userId],
-        queryFn: () => notificationApi.list(userId),
-        enabled: !!userId,
-    });
+  const { data, isLoading, error } = useQuery<Notification[]>({
+    queryKey: ['notifications', userId],
+    queryFn: () => notificationApi.list(userId),
+    enabled: !!userId,
+  });
 
-    const markRead = useMutation({
-        mutationFn: notificationApi.markRead,
-        onSuccess: () => qc.invalidateQueries({ queryKey: ['notifications'] }),
-    });
+  const markRead = useMutation({
+    mutationFn: notificationApi.markRead,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['notifications'] }),
+  });
 
-    const unread = data?.filter(n => !n.isRead).length ?? 0;
+  const unread = data?.filter((n) => !n.isRead).length ?? 0;
 
-    return (
-        <DashboardLayout>
-            <Header title="Notifications" subtitle={`${unread} unread`} />
+  return (
+    <DashboardLayout>
+      <Header title="Notifications" subtitle={`${unread} unread`} />
 
-            <div className="px-8 py-6">
-                {unread > 0 && (
-                    <div className="flex justify-end mb-4">
-                        <button
-                            onClick={() => data?.filter(n => !n.isRead).forEach(n => markRead.mutate(n.id))}
-                            className="btn-ghost text-xs"
-                        >
-                            <CheckCheck className="w-4 h-4" /> Mark all read
-                        </button>
-                    </div>
-                )}
+      <div className="px-8 py-6">
+        {unread > 0 && (
+          <div className="flex justify-end mb-4">
+            <button
+              onClick={() =>
+                data
+                  ?.filter((n) => !n.isRead)
+                  .forEach((n) => markRead.mutate(n.id))
+              }
+              className="btn-ghost text-xs"
+            >
+              <CheckCheck className="w-4 h-4" /> Mark all read
+            </button>
+          </div>
+        )}
 
-                {isLoading ? <Spinner /> :
-                    error ? <ErrorMessage message="Could not load notifications." /> :
-                        (data ?? []).length === 0
-                            ? <EmptyState icon={Bell} title="No notifications" description="You're all caught up!" />
-                            : (
-                                <div className="space-y-2 max-w-2xl">
-                                    {(data ?? []).map(n => (
-                                        <NotificationCard key={n.id} notification={n}
-                                            onMarkRead={id => markRead.mutate(id)} />
-                                    ))}
-                                </div>
-                            )
-                }
-            </div>
-        </DashboardLayout>
-    );
+        {isLoading ? (
+          <Spinner />
+        ) : error ? (
+          <ErrorMessage message="Could not load notifications." />
+        ) : (data ?? []).length === 0 ? (
+          <EmptyState
+            icon={Bell}
+            title="No notifications"
+            description="You're all caught up!"
+          />
+        ) : (
+          <div className="space-y-2 max-w-2xl">
+            {(data ?? []).map((n) => (
+              <NotificationCard
+                key={n.id}
+                notification={n}
+                onMarkRead={(id) => markRead.mutate(id)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </DashboardLayout>
+  );
 }

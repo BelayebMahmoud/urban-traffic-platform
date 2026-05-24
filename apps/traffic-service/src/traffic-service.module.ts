@@ -11,4 +11,4 @@ import { TrafficServiceService } from './traffic-service.service';
   providers: [TrafficServiceService, TrafficServiceResolver],
   exports: [TrafficServiceService],
 })
-export class TrafficServiceModule { }
+export class TrafficServiceModule {}

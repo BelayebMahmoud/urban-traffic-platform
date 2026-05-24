@@ -26,6 +26,9 @@ export class NotificationServiceService {
   async markAsRead(id: string) {
     const notif = await this.prisma.notification.findUnique({ where: { id } });
     if (!notif) throw new NotFoundException('Notification not found.');
-    return this.prisma.notification.update({ where: { id }, data: { isRead: true } });
+    return this.prisma.notification.update({
+      where: { id },
+      data: { isRead: true },
+    });
   }
 }

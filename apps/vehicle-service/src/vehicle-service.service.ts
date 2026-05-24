@@ -1,32 +1,69 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaClientService } from '@app/prisma-client';
 import { VehicleStatus, VehicleType } from '@prisma/client';
+import { EventsGateway } from '@app/common';
 
 interface CreateVehicleData {
   plateNumber: string;
   type: VehicleType;
   status: VehicleStatus;
   ownerId: string;
+  latitude: number;
+  longitude: number;
 }
 
 interface SimulateData {
-  latitude?: number;
-  longitude?: number;
+  latitude: number;
+  longitude: number;
   speed?: number;
 }
 
 @Injectable()
 export class VehicleServiceService {
-  constructor(private readonly prisma: PrismaClientService) {}
+  constructor(
+    private readonly prisma: PrismaClientService,
+    private readonly events: EventsGateway,
+  ) {}
 
   async createVehicle(data: CreateVehicleData) {
     const plate = data.plateNumber.trim().toUpperCase();
-    const existing = await this.prisma.vehicle.findUnique({ where: { plateNumber: plate } });
-    if (existing) throw new BadRequestException('A vehicle with this plate number already exists.');
-
-    return this.prisma.vehicle.create({
-      data: { plateNumber: plate, type: data.type, status: data.status, ownerId: data.ownerId },
+    const existing = await this.prisma.vehicle.findUnique({
+      where: { plateNumber: plate },
     });
+    if (existing)
+      throw new BadRequestException(
+        'A vehicle with this plate number already exists.',
+      );
+
+    const vehicle = await this.prisma.vehicle.create({
+      data: {
+        plateNumber: plate,
+        type: data.type,
+        status: data.status,
+        ownerId: data.ownerId,
+      },
+    });
+
+    await this.prisma.gpsPosition.create({
+      data: {
+        vehicleId: vehicle.id,
+        latitude: data.latitude,
+        longitude: data.longitude,
+        speed: null,
+      },
+    });
+    this.events.emitVehiclePosition({
+      vehicleId: vehicle.id,
+      latitude: data.latitude,
+      longitude: data.longitude,
+      speed: null,
+    });
+
+    return vehicle;
   }
 
   getVehicles() {
@@ -50,25 +87,38 @@ export class VehicleServiceService {
       orderBy: { timestamp: 'desc' },
     });
 
-    const latitude = data.latitude ?? this.nudgeCoord(last?.latitude, -90, 90);
-    const longitude = data.longitude ?? this.nudgeCoord(last?.longitude, -180, 180);
     const speed = data.speed ?? this.nudgeSpeed(last?.speed ?? undefined);
 
-    return this.prisma.gpsPosition.create({ data: { vehicleId, latitude, longitude, speed } });
+    const position = await this.prisma.gpsPosition.create({
+      data: {
+        vehicleId,
+        latitude: data.latitude,
+        longitude: data.longitude,
+        speed,
+      },
+    });
+    this.events.emitVehiclePosition({
+      vehicleId,
+      latitude: position.latitude,
+      longitude: position.longitude,
+      speed: position.speed,
+    });
+    return position;
   }
 
   async getMovementHistory(vehicleId: string) {
     await this.getVehicle(vehicleId);
-    return this.prisma.gpsPosition.findMany({ where: { vehicleId }, orderBy: { timestamp: 'asc' } });
-  }
-
-  private nudgeCoord(prev: number | undefined | null, min: number, max: number): number {
-    if (prev != null) return this.clamp(prev + (Math.random() - 0.5) * 0.01, min, max);
-    return Number((min + Math.random() * (max - min)).toFixed(6));
+    return this.prisma.gpsPosition.findMany({
+      where: { vehicleId },
+      orderBy: { timestamp: 'asc' },
+    });
   }
 
   private nudgeSpeed(prev: number | undefined): number {
-    if (prev != null) return Number(this.clamp(prev + (Math.random() - 0.5) * 15, 0, 160).toFixed(2));
+    if (prev != null)
+      return Number(
+        this.clamp(prev + (Math.random() - 0.5) * 15, 0, 160).toFixed(2),
+      );
     return Number((20 + Math.random() * 70).toFixed(2));
   }
 

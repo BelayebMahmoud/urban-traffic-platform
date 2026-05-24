@@ -27,7 +27,9 @@ export class NotificationServiceResolver {
 
   @Mutation(() => NotificationGql)
   @UseGuards(JwtAuthGuard)
-  markNotificationAsRead(@Args('id', { type: () => ID }) id: string): Promise<any> {
+  markNotificationAsRead(
+    @Args('id', { type: () => ID }) id: string,
+  ): Promise<any> {
     return this.notifications.markAsRead(id);
   }
 }
