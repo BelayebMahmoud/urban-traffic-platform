@@ -125,7 +125,7 @@ jobs:
       - name: Check if frontend directory exists
         id: frontend_check
         run: |
-          if [ -d "../frontend" ]; then
+          if [ -d "frontend" ]; then
             echo "exists=true" >> $GITHUB_OUTPUT
           else
             echo "exists=false" >> $GITHUB_OUTPUT
