@@ -1,25 +1,26 @@
 # ================================================================
-# CI — Lint, Test & Build
-# Urban Traffic Platform (NestJS monorepo · GraphQL · MySQL 8)
+# CI/CD - Lint, Test, Build & Deploy
+# Urban Traffic Platform (NestJS monorepo, GraphQL, MySQL 8)
 # ================================================================
 #
 # Required GitHub Secrets:
-#   JWT_SECRET            — Secret key used to sign JWT tokens
+#   JWT_SECRET - Secret key used to sign JWT tokens
 #
-# Required GitHub Variables (optional, fallback values are used):
-#   PROD_API_URL          — Production API URL (used by frontend build)
+# Required GitHub Variables:
+#   PROD_API_URL - Public production API URL used by the GitHub Pages frontend
 #
-# Note: unit tests mock all Prisma calls — no real database needed.
-# The MySQL service is only used by integration smoke tests (docker-compose.test.yml).
+# GitHub Pages:
+#   Repository Settings -> Pages -> Source must be "GitHub Actions".
 # ================================================================
 
-name: CI — Lint, Test & Build
+name: CI/CD - Build & Deploy
 
 on:
   push:
     branches: [main, develop]
   pull_request:
     branches: [main, develop]
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -34,9 +35,8 @@ env:
   IMAGE_PREFIX: ${{ github.repository_owner }}/urban-traffic
 
 jobs:
-  # ── Job 1: Backend — Lint & Unit Tests ──────────────────────────────────────
   backend-lint-test:
-    name: Backend — Lint & Unit Tests
+    name: Backend - Lint & Unit Tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -51,15 +51,15 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Generate Prisma client
         run: npx prisma generate
 
       - name: Run ESLint
-        run: npm run lint
+        run: npx eslint "{src,apps,libs,test}/**/*.ts"
 
-      - name: Run unit tests (all Prisma calls are mocked — no DB required)
+      - name: Run unit tests
         run: npm test -- --passWithNoTests --forceExit
         env:
           JWT_SECRET: ${{ secrets.JWT_SECRET || 'ci-test-secret' }}
@@ -73,9 +73,8 @@ jobs:
           path: coverage/
           retention-days: 7
 
-  # ── Job 2: Backend — Build ────────────────────────────────────────────────────
   backend-build:
-    name: Backend — Build (api-gateway)
+    name: Backend - Build (api-gateway)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: backend-lint-test
@@ -91,13 +90,12 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Generate Prisma client
         run: npx prisma generate
 
       - name: Build api-gateway
-        # Explicitly builds api-gateway — avoids the stale urban-traffic-platform default
         run: npx nest build api-gateway
 
       - name: Upload build artifact
@@ -107,13 +105,11 @@ jobs:
           path: dist/
           retention-days: 3
 
-  # ── Job 3: Frontend — Lint & Build ───────────────────────────────────────────
   frontend-lint-build:
-    name: Frontend — Lint & Build
+    name: Frontend - Lint & Static Build
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
-    # Skip if no frontend directory exists
     defaults:
       run:
         working-directory: frontend
@@ -122,18 +118,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Check if frontend directory exists
-        id: frontend_check
-        run: |
-          if [ -d "frontend" ]; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-          else
-            echo "exists=false" >> $GITHUB_OUTPUT
-          fi
-        working-directory: .
-
       - name: Set up Node.js ${{ env.NODE_VERSION }}
-        if: steps.frontend_check.outputs.exists == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -141,33 +126,49 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install frontend dependencies
-        if: steps.frontend_check.outputs.exists == 'true'
-        run: npm install
+        run: npm ci
 
       - name: Run frontend lint
-        if: steps.frontend_check.outputs.exists == 'true'
         run: npm run lint
 
-      - name: Build frontend (static export)
-        if: steps.frontend_check.outputs.exists == 'true'
+      - name: Build frontend for GitHub Pages
         run: npm run build
         env:
           STATIC_EXPORT: 'true'
-          NEXT_PUBLIC_BASE_PATH: ''
+          NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
           NEXT_PUBLIC_API_URL: ${{ vars.PROD_API_URL || 'http://localhost:3000' }}
 
+      - name: Add GitHub Pages marker
+        run: New-Item -ItemType File -Path out/.nojekyll -Force
+        shell: pwsh
+
       - name: Upload Pages artifact
-        if: >-
-          steps.frontend_check.outputs.exists == 'true' &&
-          github.ref == 'refs/heads/main' &&
-          github.event_name == 'push'
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         uses: actions/upload-pages-artifact@v3
         with:
           path: frontend/out
 
-  # ── Job 4: Docker — Build & Push (main branch only) ──────────────────────────
+  deploy-pages:
+    name: Deploy - GitHub Pages
+    runs-on: ubuntu-latest
+    needs: frontend-lint-build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
   docker-build:
-    name: Docker — Build & Push (${{ matrix.service.name }})
+    name: Docker - Build & Push (${{ matrix.service.name }})
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: [backend-build, frontend-lint-build]
@@ -187,7 +188,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up QEMU (multi-platform)
+      - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
