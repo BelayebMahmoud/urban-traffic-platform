@@ -31,7 +31,7 @@ describe('AuthServiceController', () => {
   describe('getUsers()', () => {
     it('returns users list when requester is ADMIN', () => {
       authServiceMock.getUsers.mockReturnValue([]);
-      controller.getUsers(adminReq);
+      void controller.getUsers(adminReq);
       expect(authServiceMock.getUsers).toHaveBeenCalled();
     });
 
@@ -49,7 +49,7 @@ describe('AuthServiceController', () => {
         id: 'u1',
         isActive: false,
       });
-      controller.toggleUser('u1', adminReq);
+      void controller.toggleUser('u1', adminReq);
       expect(authServiceMock.toggleUserStatus).toHaveBeenCalledWith('u1');
     });
 

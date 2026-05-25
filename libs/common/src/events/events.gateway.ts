@@ -26,7 +26,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage('join')
   handleJoinRoom(client: Socket, userId: string) {
-    client.join(`user:${userId}`);
+    void client.join(`user:${userId}`);
     this.logger.log(`Client ${client.id} joined room user:${userId}`);
   }
 

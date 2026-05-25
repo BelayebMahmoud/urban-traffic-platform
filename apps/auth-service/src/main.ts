@@ -7,4 +7,4 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   await app.listen(process.env.AUTH_SERVICE_PORT ?? 3001);
 }
-bootstrap();
+void bootstrap();

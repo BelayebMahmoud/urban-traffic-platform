@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /**
  * Unit tests for IncidentServiceService
  * Coverage target: >80%

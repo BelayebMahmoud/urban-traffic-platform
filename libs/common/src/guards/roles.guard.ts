@@ -5,7 +5,7 @@ import { ROLES_KEY } from '../decorators/roles.decorator';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
-  constructor(private readonly reflector: Reflector) {}
+  constructor(private readonly reflector: Reflector) { }
 
   canActivate(context: ExecutionContext): boolean {
     const required = this.reflector.getAllAndOverride<string[]>(ROLES_KEY, [
@@ -15,7 +15,8 @@ export class RolesGuard implements CanActivate {
     if (!required) return true;
 
     const ctx = GqlExecutionContext.create(context);
-    const user = ctx.getContext().req.user;
-    return required.includes(user?.role);
+    const gqlCtx = ctx.getContext<{ req?: { user?: { role: string } } }>();
+    const user = gqlCtx.req?.user;
+    return required.includes(user?.role ?? '');
   }
 }

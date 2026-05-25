@@ -11,4 +11,4 @@ async function bootstrap() {
     `API Gateway running on http://localhost:${process.env.API_GATEWAY_PORT ?? 3000}/graphql`,
   );
 }
-bootstrap();
+void bootstrap();

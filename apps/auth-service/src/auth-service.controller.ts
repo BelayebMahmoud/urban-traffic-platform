@@ -13,16 +13,16 @@ import { AuthServiceService } from './auth-service.service';
 @Controller('admin')
 @UseGuards(JwtAuthGuard)
 export class AuthServiceController {
-  constructor(private readonly auth: AuthServiceService) {}
+  constructor(private readonly auth: AuthServiceService) { }
 
   @Get('users')
-  getUsers(@Request() req: any) {
+  getUsers(@Request() req: { user: { role: string } }) {
     if (req.user.role !== 'ADMIN') throw new ForbiddenException();
     return this.auth.getUsers();
   }
 
   @Patch('users/:id/toggle')
-  toggleUser(@Param('id') id: string, @Request() req: any) {
+  toggleUser(@Param('id') id: string, @Request() req: { user: { role: string } }) {
     if (req.user.role !== 'ADMIN') throw new ForbiddenException();
     return this.auth.toggleUserStatus(id);
   }
